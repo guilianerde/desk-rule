@@ -569,10 +569,7 @@ class RustdeskImpl {
   }
 
   Future<void> sessionInputOsPassword(
-      {required UuidValue sessionId, required String value, dynamic hint}) {
-    return Future(
-        () => js.context.callMethod('setByName', ['input_os_password', value]));
-  }
+      {required UuidValue sessionId, required String value, dynamic hint}) async {}
 
   Future<void> sessionReadRemoteDir(
       {required UuidValue sessionId,

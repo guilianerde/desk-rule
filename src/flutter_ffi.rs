@@ -750,9 +750,7 @@ pub fn session_get_peer_option(session_id: SessionID, name: String) -> String {
 }
 
 pub fn session_input_os_password(session_id: SessionID, value: String) {
-    if let Some(session) = sessions::get_session_by_session_id(&session_id) {
-        session.input_os_password(value, true);
-    }
+    let _ = (session_id, value);
 }
 
 // File Action

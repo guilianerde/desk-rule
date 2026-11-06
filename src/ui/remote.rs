@@ -510,7 +510,6 @@ impl sciter::EventHandler for SciterSession {
         fn get_local_option(String);
         fn t(String);
         fn set_option(String, String);
-        fn input_os_password(String, bool);
         fn save_close_state(String, String);
         fn is_file_transfer();
         fn is_port_forward();

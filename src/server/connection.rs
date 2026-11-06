@@ -1950,68 +1950,14 @@ impl Connection {
             pi.hostname = DEVICE_NAME.lock().unwrap().clone();
             pi.platform = "Android".into();
         }
-        #[cfg(all(target_os = "macos", not(feature = "unix-file-copy-paste")))]
-        let mut platform_additions = serde_json::Map::new();
-        #[cfg(any(
-            target_os = "windows",
-            target_os = "linux",
-            all(target_os = "macos", feature = "unix-file-copy-paste")
-        ))]
-        let mut platform_additions = serde_json::Map::new();
         #[cfg(target_os = "linux")]
-        {
-            if crate::platform::current_is_wayland() {
-                platform_additions.insert("is_wayland".into(), json!(true));
-            }
+        if crate::platform::current_is_wayland() {
+            pi.platform_additions = json!({"is_wayland": true}).to_string();
         }
         #[cfg(target_os = "windows")]
         {
-            platform_additions.insert(
-                "is_installed".into(),
-                json!(crate::platform::is_installed()),
-            );
-            if crate::platform::is_installed() {
-                platform_additions.extend(virtual_display_manager::get_platform_additions());
-            }
-            platform_additions.insert(
-                "supported_privacy_mode_impl".into(),
-                json!(privacy_mode::get_supported_privacy_mode_impl()),
-            );
-        }
-        #[cfg(target_os = "macos")]
-        {
-            platform_additions.insert(
-                "supported_privacy_mode_impl".into(),
-                json!(privacy_mode::get_supported_privacy_mode_impl()),
-            );
-        }
-
-        #[cfg(any(target_os = "windows", feature = "unix-file-copy-paste"))]
-        {
-            let is_both_windows = cfg!(target_os = "windows")
-                && self.lr.my_platform == hbb_common::whoami::Platform::Windows.to_string();
-            #[cfg(feature = "unix-file-copy-paste")]
-            let is_unix_and_peer_supported = crate::is_support_file_copy_paste(&self.lr.version);
-            #[cfg(not(feature = "unix-file-copy-paste"))]
-            let is_unix_and_peer_supported = false;
-            let is_both_macos = cfg!(target_os = "macos")
-                && self.lr.my_platform == hbb_common::whoami::Platform::MacOS.to_string();
-            let is_peer_support_paste_if_macos =
-                crate::is_support_file_paste_if_macos(&self.lr.version);
-            let has_file_clipboard = is_both_windows
-                || (is_unix_and_peer_supported
-                    && (!is_both_macos || is_peer_support_paste_if_macos));
-            platform_additions.insert("has_file_clipboard".into(), json!(has_file_clipboard));
-        }
-
-        #[cfg(any(target_os = "windows", target_os = "linux"))]
-        {
-            platform_additions.insert("support_view_camera".into(), json!(true));
-        }
-
-        #[cfg(any(target_os = "linux", target_os = "windows", target_os = "macos"))]
-        if !platform_additions.is_empty() {
-            pi.platform_additions = serde_json::to_string(&platform_additions).unwrap_or("".into());
+            pi.platform_additions =
+                json!({"is_installed": crate::platform::is_installed()}).to_string();
         }
 
         if self.is_port_forward() {

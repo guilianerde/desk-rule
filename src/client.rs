@@ -25,7 +25,6 @@ use std::{
 use uuid::Uuid;
 
 use crate::{
-    common::input::{MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT, MOUSE_TYPE_DOWN, MOUSE_TYPE_UP},
     is_keyboard_mode_supported,
     ui_interface::{get_builtin_option, resolve_avatar_url, use_texture_render},
     ui_session_interface::{InvokeUiSession, Session},
@@ -1335,19 +1334,6 @@ impl LoginConfigHandler {
             true
         } else {
             false
-        }
-    }
-
-    /// Check if the client should auto login.
-    /// Return password if the client should auto login, otherwise return empty string.
-    pub fn should_auto_login(&self) -> String {
-        let l = self.lock_after_session_end.v;
-        let a = !self.get_option("auto-login").is_empty();
-        let p = self.get_option("os-password");
-        if !p.is_empty() && l && a {
-            p
-        } else {
-            "".to_owned()
         }
     }
 
@@ -2681,109 +2667,6 @@ pub fn send_pointer_device_event(
     }
     msg_out.set_pointer_device_event(evt);
     interface.send(Data::Message(msg_out));
-}
-
-/// Activate OS by sending mouse movement.
-///
-/// # Arguments
-///
-/// * `interface` - The interface for sending data.
-/// * `send_left_click` - Whether to send a click event.
-fn activate_os(interface: &impl Interface, send_left_click: bool) {
-    let left_down = MOUSE_BUTTON_LEFT << 3 | MOUSE_TYPE_DOWN;
-    let left_up = MOUSE_BUTTON_LEFT << 3 | MOUSE_TYPE_UP;
-    let right_down = MOUSE_BUTTON_RIGHT << 3 | MOUSE_TYPE_DOWN;
-    let right_up = MOUSE_BUTTON_RIGHT << 3 | MOUSE_TYPE_UP;
-    send_mouse(left_up, 0, 0, false, false, false, false, interface);
-    std::thread::sleep(Duration::from_millis(50));
-    send_mouse(0, 0, 0, false, false, false, false, interface);
-    std::thread::sleep(Duration::from_millis(50));
-    send_mouse(0, 3, 3, false, false, false, false, interface);
-    let (click_down, click_up) = if send_left_click {
-        (left_down, left_up)
-    } else {
-        (right_down, right_up)
-    };
-    std::thread::sleep(Duration::from_millis(50));
-    send_mouse(click_down, 0, 0, false, false, false, false, interface);
-    send_mouse(click_up, 0, 0, false, false, false, false, interface);
-    /*
-    let mut key_event = KeyEvent::new();
-    // do not use Esc, which has problem with Linux
-    key_event.set_control_key(ControlKey::RightArrow);
-    key_event.press = true;
-    let mut msg_out = Message::new();
-    msg_out.set_key_event(key_event.clone());
-    interface.send(Data::Message(msg_out.clone()));
-    */
-}
-
-/// Input the OS's password.
-///
-/// # Arguments
-///
-/// * `p` - The password.
-/// * `activate` - Whether to activate OS.
-/// * `interface` - The interface for sending data.
-pub fn input_os_password(p: String, activate: bool, interface: impl Interface) {
-    std::thread::spawn(move || {
-        _input_os_password(p, activate, interface);
-    });
-}
-
-/// Input the OS's password.
-///
-/// # Arguments
-///
-/// * `p` - The password.
-/// * `activate` - Whether to activate OS.
-/// * `interface` - The interface for sending data.
-fn _input_os_password(p: String, activate: bool, interface: impl Interface) {
-    let input_password = !p.is_empty();
-    if activate {
-        // Click event is used to bring up the password input box.
-        activate_os(&interface, input_password);
-        std::thread::sleep(Duration::from_millis(1200));
-    }
-    if !input_password {
-        return;
-    }
-    let mut key_event = KeyEvent::new();
-    key_event.mode = KeyboardMode::Legacy.into();
-    key_event.press = true;
-    let mut msg_out = Message::new();
-    key_event.set_seq(p);
-    msg_out.set_key_event(key_event.clone());
-    interface.send(Data::Message(msg_out.clone()));
-    key_event.set_control_key(ControlKey::Return);
-    msg_out.set_key_event(key_event);
-    interface.send(Data::Message(msg_out));
-}
-
-/// Auto Login. A peer that can check for its logon or lock screen gets the password and types it
-/// itself, only if it is there right then. Keys typed from here land in whatever has focus if the
-/// screen is not locked by the time they arrive.
-pub fn auto_login(p: String, pi: &PeerInfo, interface: impl Interface) {
-    if !is_peer_handling_os_login(pi) {
-        input_os_password(p, true, interface);
-        return;
-    }
-    std::thread::spawn(move || {
-        activate_os(&interface, true);
-        std::thread::sleep(Duration::from_millis(1200));
-        let mut msg_out = Message::new();
-        msg_out.set_os_login(OSLogin {
-            password: p,
-            ..Default::default()
-        });
-        interface.send(Data::Message(msg_out));
-    });
-}
-
-/// Windows and macOS peers from the 1.5.1 release handle `os_login`.
-fn is_peer_handling_os_login(pi: &PeerInfo) -> bool {
-    (pi.platform == crate::common::PLATFORM_WINDOWS || pi.platform == crate::common::PLATFORM_MACOS)
-        && hbb_common::get_version_number(&pi.version) >= hbb_common::get_version_number("1.5.1")
 }
 
 #[derive(Copy, Clone)]

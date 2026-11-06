@@ -16,7 +16,6 @@ import 'package:flutter_hbb/utils/multi_window_manager.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-bool isEditOsPassword = false;
 const String kPeerOptionAllowWaylandKeyboard = 'allow-wayland-keyboard';
 const String kWaylandKeyboardIssueUrl =
     'https://github.com/rustdesk/rustdesk/issues/14586';
@@ -254,30 +253,6 @@ List<TRadioMenu<T>> _registerRadioMenuShortcuts<T>(
   return menus;
 }
 
-handleOsPasswordEditIcon(
-    SessionID sessionId, OverlayDialogManager dialogManager) {
-  isEditOsPassword = true;
-  showSetOSPassword(
-      sessionId, false, dialogManager, null, () => isEditOsPassword = false);
-}
-
-handleOsPasswordAction(
-    SessionID sessionId, OverlayDialogManager dialogManager) async {
-  if (isEditOsPassword) {
-    isEditOsPassword = false;
-    return;
-  }
-  final password =
-      await bind.sessionGetOption(sessionId: sessionId, arg: 'os-password') ??
-          '';
-  if (password.isEmpty) {
-    showSetOSPassword(sessionId, true, dialogManager, password,
-        () => isEditOsPassword = false);
-  } else {
-    bind.sessionInputOsPassword(sessionId: sessionId, value: password);
-  }
-}
-
 void showWaylandKeyboardInputWarningDialog(
     {required String id,
     required String connectionId,
@@ -473,29 +448,6 @@ List<TTextMenu> toolbarControls(BuildContext context, String id, FFI ffi) {
           child: Text(translate('Request Elevation')),
           onPressed: () =>
               showRequestElevationDialog(sessionId, ffi.dialogManager)),
-    );
-  }
-  // osPassword
-  if (isDefaultConn && perms['keyboard'] != false) {
-    v.add(
-      TTextMenu(
-        child: Row(children: [
-          Text(translate('OS Password')),
-        ]),
-        trailingIcon: Transform.scale(
-          scale: (isDesktop || isWebDesktop) ? 0.8 : 1,
-          child: IconButton(
-            onPressed: () {
-              if (isMobile && Navigator.canPop(context)) {
-                Navigator.pop(context);
-              }
-              handleOsPasswordEditIcon(sessionId, ffi.dialogManager);
-            },
-            icon: Icon(Icons.edit, color: isMobile ? MyTheme.accent : null),
-          ),
-        ),
-        onPressed: () => handleOsPasswordAction(sessionId, ffi.dialogManager),
-      ),
     );
   }
   // paste

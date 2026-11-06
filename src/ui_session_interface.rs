@@ -44,7 +44,7 @@ use uuid::Uuid;
 use crate::client::io_loop::Remote;
 use crate::client::{
     check_if_retry, handle_hash, handle_login_error, handle_login_from_ui, handle_test_delay,
-    input_os_password, send_mouse, send_pointer_device_event, FileManager, Key, LoginConfigHandler,
+    send_mouse, send_pointer_device_event, FileManager, Key, LoginConfigHandler,
     QualityStatus, KEY_MAP,
 };
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
@@ -682,10 +682,6 @@ impl<T: InvokeUiSession> Session<T> {
         } else {
             return "/";
         }
-    }
-
-    pub fn input_os_password(&self, pass: String, activate: bool) {
-        input_os_password(pass, activate, self.clone());
     }
 
     #[cfg(not(feature = "flutter"))]
@@ -1841,10 +1837,6 @@ impl<T: InvokeUiSession> Interface for Session<T> {
             }
             if !self.is_view_camera() {
                 self.try_change_init_resolution(pi.current_display);
-                let p = self.lc.read().unwrap().should_auto_login();
-                if !p.is_empty() {
-                    crate::client::auto_login(p, &pi, self.clone());
-                }
             }
             let current = &pi.displays[pi.current_display as usize];
             self.set_display(

@@ -1,0 +1,50 @@
+name: Windows encrypted desktop and input
+
+on:
+  push:
+    branches: [ci/windows-controls-e2e]
+
+permissions:
+  contents: read
+
+jobs:
+  controls-x64:
+    runs-on: windows-2022
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Prepare Rust and vcpkg
+        shell: pwsh
+        run: |
+          rustup default stable-x86_64-pc-windows-msvc
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $vcpkg = Join-Path $env:RUNNER_TEMP 'desk-rule-vcpkg'
+          git init $vcpkg
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git -C $vcpkg fetch --depth 1 https://github.com/microsoft/vcpkg.git 9e593bb18ea69cc5095e012465dcd675a822ed0d
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git -C $vcpkg checkout --detach FETCH_HEAD
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & (Join-Path $vcpkg 'bootstrap-vcpkg.bat') -disableMetrics
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "VCPKG_ROOT=$vcpkg" >> $env:GITHUB_ENV
+      - name: Install native codec dependencies
+        shell: pwsh
+        run: |
+          $overlay = Join-Path $env:GITHUB_WORKSPACE 'res/vcpkg'
+          Push-Location $env:VCPKG_ROOT
+          try {
+            .\vcpkg.exe install --classic "--overlay-ports=$overlay" libvpx:x64-windows-static libyuv:x64-windows-static aom:x64-windows-static opus:x64-windows-static libjpeg-turbo:x64-windows-static
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          } finally {
+            Pop-Location
+          }
+      - name: Exercise native Windows capture and input on loopback
+        shell: pwsh
+        run: |
+          $env:LIBCLANG_PATH = Join-Path $env:ProgramFiles 'LLVM/bin'
+          cargo run --locked --example windows_remote_probe --target x86_64-pc-windows-msvc
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

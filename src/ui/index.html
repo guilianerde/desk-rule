@@ -1,0 +1,39 @@
+<html>
+<head>
+    <style>
+        @import url(common.css);
+        body { margin: 24dip; width: *; height: *; overflow: auto; }
+        section { margin-bottom: 18dip; }
+        label { display: block; margin: 6dip 0; }
+        input[type=text] { width: *; }
+        button { margin-top: 8dip; }
+        .error { color: #b02323; }
+    </style>
+    <script type="text/tiscript">
+        include "common.tis";
+        include "index.tis";
+    </script>
+</head>
+<body>
+    <section>
+        <h2>Control a device</h2>
+        <label for="peer">Device IP address</label>
+        <input type="text" id="peer" placeholder="100.64.0.10" />
+        <label for="fingerprint">Device fingerprint</label>
+        <input type="text" id="fingerprint" />
+        <button id="connect">Connect</button>
+        <div id="error" class="error"></div>
+    </section>
+    <section>
+        <h2>Allow remote control</h2>
+        <button id="sharing">Start sharing</button>
+        <div id="host-error" class="error"></div>
+        <div id="host-info" style="display:none">
+            <label for="local-fingerprint">Fingerprint</label>
+            <input type="text" id="local-fingerprint" readonly />
+            <label for="local-passcode">Temporary password</label>
+            <input type="text" id="local-passcode" readonly />
+        </div>
+    </section>
+</body>
+</html>

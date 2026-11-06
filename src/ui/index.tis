@@ -1,0 +1,51 @@
+function refreshHost() {
+    var enabled = handler.get_option("stop-service") == "N";
+    $(#sharing).text = enabled ? "Stop sharing" : "Start sharing";
+    $(#host-info).style#display = enabled ? "block" : "none";
+    if (enabled) {
+        $(#local-fingerprint).value = handler.get_fingerprint();
+        $(#local-passcode).value = handler.temporary_password();
+    }
+    return true;
+}
+
+event change $(#peer) {
+    var address = ($(#peer).value || "").trim();
+    $(#fingerprint).value = handler.get_local_option("peer-fingerprint-" + address);
+}
+
+event click $(#connect) {
+    var address = ($(#peer).value || "").trim();
+    var fingerprint = ($(#fingerprint).value || "").replace(/\s/g, "");
+    if (!handler.is_direct_address(address) || !/^[0-9a-fA-F]{64}$/.test(fingerprint)) {
+        $(#error).text = "Enter the device IP and paste its fingerprint.";
+        return;
+    }
+    $(#error).text = "";
+    handler.set_local_option("peer-fingerprint-" + address, fingerprint);
+    handler.new_remote(address, "connect", false);
+}
+
+event click $(#sharing) {
+    var sharing = handler.get_option("stop-service") == "N";
+    if (!sharing && !handler.request_host_permissions()) {
+        $(#host-error).text = "Allow screen recording and accessibility in System Settings, then start sharing.";
+        return;
+    }
+    $(#host-error).text = "";
+    handler.set_option("stop-service", sharing ? "Y" : "N");
+    refreshHost();
+}
+
+function self.ready() {
+    view.windowMinSize = (440, 400);
+    centerize(scaleIt(520), scaleIt(470));
+    refreshHost();
+    self.timer(1s, refreshHost);
+}
+
+function self.closing() {
+    var (x, y, w, h) = view.box(#rectw, #border, #screen);
+    handler.closing(x, y, w, h);
+    return true;
+}

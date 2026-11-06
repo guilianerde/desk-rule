@@ -1,0 +1,116 @@
+name: Windows portable runtime smoke
+
+on:
+  push:
+    branches: [ci/windows-runtime-smoke]
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: windows-2022
+    timeout-minutes: 8
+    steps:
+      - name: Download the approved Windows x64 package
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 42191842054 --repo "$env:GITHUB_REPOSITORY" --name desk-rule-windows-x64 --dir artifact
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $zip = 'artifact/desk-rule-windows-x64.zip'
+          if ((Get-FileHash -Algorithm SHA256 $zip).Hash -ne '30ed253d1230f9f8acc0cbbfd0c6a46267836bbf75162a65234e8b54ddb53d62') {
+            throw 'Windows package does not match the verified artifact.'
+          }
+          Expand-Archive $zip -DestinationPath artifact
+      - name: Start Desk Rule and exercise local sharing
+        shell: pwsh
+        run: |
+          @'
+          import json
+          from pathlib import Path
+          import socket
+          import subprocess
+          import time
+
+          def read_exact(read, count):
+              data = bytearray()
+              while len(data) < count:
+                  part = read(count - len(data))
+                  if not part:
+                      raise EOFError("Desk Rule closed before finishing the frame")
+                  data.extend(part)
+              return bytes(data)
+
+          def read_frame(read):
+              first = read_exact(read, 1)
+              width = (first[0] & 3) + 1
+              header = first + read_exact(read, width - 1)
+              length = int.from_bytes(header, "little") >> 2
+              assert 0 < length < 65536, length
+              return read_exact(read, length)
+
+          def request(pipe, options):
+              payload = json.dumps({"t": "Options", "c": options}).encode()
+              assert len(payload) < 16384
+              width = 1 if len(payload) < 64 else 2
+              pipe.write(((len(payload) << 2) | (width - 1)).to_bytes(width, "little") + payload)
+              return json.loads(read_frame(pipe.read))
+
+          def can_connect():
+              try:
+                  with socket.create_connection(("127.0.0.1", 21118), timeout=1):
+                      return True
+              except OSError:
+                  return False
+
+          folder = Path("artifact/desk-rule-windows-x64").resolve()
+          app = subprocess.Popen([str(folder / "desk-rule.exe")], cwd=folder)
+          try:
+              deadline = time.monotonic() + 25
+              while True:
+                  assert app.poll() is None, f"Desk Rule exited during startup: {app.returncode}"
+                  try:
+                      pipe = open(r"\\.\pipe\desk-rule\query", "r+b", buffering=0)
+                      break
+                  except OSError:
+                      if time.monotonic() >= deadline:
+                          raise
+                      time.sleep(0.25)
+              with pipe:
+                  original = request(pipe, None)["c"]
+                  assert original["stop-service"] == "Y", "sharing should be off by default"
+                  assert not can_connect(), "port accepted a connection while sharing was off"
+                  print("Windows process and local IPC started; sharing defaults to off.")
+                  try:
+                      assert request(pipe, {**original, "stop-service": "N"}) == {"t": "Options", "c": None}
+                      deadline = time.monotonic() + 15
+                      while True:
+                          try:
+                              peer = socket.create_connection(("127.0.0.1", 21118), timeout=2)
+                              break
+                          except OSError:
+                              if time.monotonic() >= deadline:
+                                  raise
+                              time.sleep(0.2)
+                      with peer:
+                          peer.settimeout(5)
+                          hello = read_frame(peer.recv)
+                          assert hello[0] == 0x1a, "first TCP message is not SignedId"
+                      print("Windows direct listener sent its signed identity on TCP 21118.")
+                  finally:
+                      assert request(pipe, original) == {"t": "Options", "c": None}
+                  deadline = time.monotonic() + 10
+                  while can_connect():
+                      assert time.monotonic() < deadline, "listener stayed open after sharing stopped"
+                      time.sleep(0.2)
+                  print("Windows direct listener closed after sharing stopped.")
+          finally:
+              if app.poll() is None:
+                  app.terminate()
+                  app.wait(timeout=10)
+          '@ | Set-Content -Encoding utf8 smoke.py
+          python smoke.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

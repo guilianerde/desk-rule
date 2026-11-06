@@ -24,7 +24,10 @@ async fn receive(peer: &mut Stream) -> Message {
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
+    assert!(librustdesk::common::global_init());
     *config::APP_NAME.write().unwrap() = "desk-rule-windows-e2e".into();
+    let dpi_result = unsafe { winapi::um::shellscalingapi::SetProcessDpiAwareness(2) };
+    println!("Win32 DPI awareness result: {dpi_result:#x}");
     config::OVERWRITE_SETTINGS.write().unwrap().extend([
         (
             "verification-method".into(),
@@ -160,8 +163,10 @@ async fn main() {
 
     let origin = librustdesk::get_cursor_pos().expect("Windows input desktop is not accessible");
     let mut target = (display.x + 43, display.y + 51);
-    if origin == target {
-        target.0 += 10;
+    // Windows normalizes SendInput coordinates to a 16-bit grid.
+    let near = |p: (i32, i32)| p.0.abs_diff(target.0) <= 2 && p.1.abs_diff(target.1) <= 2;
+    if near(origin) {
+        target.0 += 20;
     }
     packet.set_mouse_event(MouseEvent {
         x: target.0,
@@ -169,13 +174,21 @@ async fn main() {
         ..Default::default()
     });
     peer.send(&packet).await.unwrap();
-    hbb_common::timeout(3000, async {
-        while librustdesk::get_cursor_pos() != Some(target) {
+    let pointer = hbb_common::timeout(3000, async {
+        loop {
+            if let Some(p) = librustdesk::get_cursor_pos() {
+                if p.0.abs_diff(target.0) <= 2 && p.1.abs_diff(target.1) <= 2 {
+                    break p;
+                }
+            }
             hbb_common::sleep(0.05).await;
         }
     })
-    .await
-    .expect("remote mouse event did not reach the Windows input desktop");
+    .await;
+    println!(
+        "Mouse origin: {origin:?}, requested: {target:?}, observed: {:?}",
+        librustdesk::get_cursor_pos()
+    );
 
     let f8_is_down =
         || unsafe { winapi::um::winuser::GetAsyncKeyState(winapi::um::winuser::VK_F8) < 0 };

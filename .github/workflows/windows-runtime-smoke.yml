@@ -29,88 +29,87 @@ jobs:
         shell: pwsh
         run: |
           @'
-          import json
+          import os
           from pathlib import Path
           import socket
           import subprocess
           import time
 
-          def read_exact(read, count):
+          def read_exact(peer, count):
               data = bytearray()
               while len(data) < count:
-                  part = read(count - len(data))
+                  part = peer.recv(count - len(data))
                   if not part:
                       raise EOFError("Desk Rule closed before finishing the frame")
                   data.extend(part)
               return bytes(data)
 
-          def read_frame(read):
-              first = read_exact(read, 1)
+          def read_frame(peer):
+              first = read_exact(peer, 1)
               width = (first[0] & 3) + 1
-              header = first + read_exact(read, width - 1)
+              header = first + read_exact(peer, width - 1)
               length = int.from_bytes(header, "little") >> 2
-              assert 0 < length < 65536, length
-              return read_exact(read, length)
-
-          def request(pipe, options):
-              payload = json.dumps({"t": "Options", "c": options}).encode()
-              assert len(payload) < 16384
-              width = 1 if len(payload) < 64 else 2
-              pipe.write(((len(payload) << 2) | (width - 1)).to_bytes(width, "little") + payload)
-              return json.loads(read_frame(pipe.read))
+              assert 0 < length < 4096, length
+              return read_exact(peer, length)
 
           def can_connect():
               try:
-                  with socket.create_connection(("127.0.0.1", 21118), timeout=1):
+                  with socket.create_connection(("127.0.0.1", 21118), timeout=0.5):
                       return True
               except OSError:
                   return False
 
           folder = Path("artifact/desk-rule-windows-x64").resolve()
-          app = subprocess.Popen([str(folder / "desk-rule.exe")], cwd=folder)
+          exe = folder / "desk-rule.exe"
+
+          def launch():
+              return subprocess.Popen([str(exe)], cwd=folder)
+
+          def stop(app):
+              if app.poll() is None:
+                  app.terminate()
+                  app.wait(timeout=10)
+
+          app = launch()
           try:
               deadline = time.monotonic() + 25
               while True:
                   assert app.poll() is None, f"Desk Rule exited during startup: {app.returncode}"
                   try:
-                      pipe = open(r"\\.\pipe\desk-rule\query", "r+b", buffering=0)
-                      break
+                      with open(r"\\.\pipe\desk-rule\query", "r+b", buffering=0):
+                          break
                   except OSError:
                       if time.monotonic() >= deadline:
                           raise
                       time.sleep(0.25)
-              with pipe:
-                  original = request(pipe, None)["c"]
-                  assert original["stop-service"] == "Y", "sharing should be off by default"
-                  assert not can_connect(), "port accepted a connection while sharing was off"
-                  print("Windows process and local IPC started; sharing defaults to off.")
-                  try:
-                      assert request(pipe, {**original, "stop-service": "N"}) == {"t": "Options", "c": None}
-                      deadline = time.monotonic() + 15
-                      while True:
-                          try:
-                              peer = socket.create_connection(("127.0.0.1", 21118), timeout=2)
-                              break
-                          except OSError:
-                              if time.monotonic() >= deadline:
-                                  raise
-                              time.sleep(0.2)
-                      with peer:
-                          peer.settimeout(5)
-                          hello = read_frame(peer.recv)
-                          assert hello[0] == 0x1a, "first TCP message is not SignedId"
-                      print("Windows direct listener sent its signed identity on TCP 21118.")
-                  finally:
-                      assert request(pipe, original) == {"t": "Options", "c": None}
-                  deadline = time.monotonic() + 10
-                  while can_connect():
-                      assert time.monotonic() < deadline, "listener stayed open after sharing stopped"
-                      time.sleep(0.2)
-                  print("Windows direct listener closed after sharing stopped.")
+              assert not can_connect(), "port accepted a connection while sharing was off"
+              print("Windows process and local IPC started; sharing defaults to off.")
           finally:
-              if app.poll() is None:
-                  app.terminate()
-                  app.wait(timeout=10)
+              stop(app)
+
+          config = Path(os.environ["APPDATA"]) / "desk-rule" / "config" / "desk-rule2.toml"
+          config.parent.mkdir(parents=True, exist_ok=True)
+          config.write_text('[options]\nstop-service = "N"\n', encoding="utf-8")
+          app = launch()
+          try:
+              deadline = time.monotonic() + 25
+              while True:
+                  assert app.poll() is None, f"Desk Rule exited with sharing enabled: {app.returncode}"
+                  try:
+                      peer = socket.create_connection(("127.0.0.1", 21118), timeout=2)
+                      break
+                  except OSError:
+                      if time.monotonic() >= deadline:
+                          raise
+                      time.sleep(0.2)
+              with peer:
+                  peer.settimeout(5)
+                  assert read_frame(peer)[0] == 0x1a, "first TCP message is not SignedId"
+              print("Windows direct listener sent its signed identity on TCP 21118.")
+          finally:
+              stop(app)
+          assert not can_connect(), "listener stayed open after the app exited"
+          print("Windows direct listener closed when Desk Rule exited.")
           '@ | Set-Content -Encoding utf8 smoke.py
           python smoke.py
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

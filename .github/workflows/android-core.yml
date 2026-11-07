@@ -34,7 +34,7 @@ jobs:
         run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/common/widgets/desk_rule_home.dart lib/main.dart lib/models/server_model.dart
       - name: Test address formatting and input modifiers
         working-directory: flutter
-        run: flutter test test/id_formatter_test.dart test/input_modifier_utils_test.dart
+        run: flutter test test/id_formatter_test.dart test/input_modifier_utils_test.dart test/desk_rule_sharing_test.dart
 
   apk-arm64:
     needs: flutter-check

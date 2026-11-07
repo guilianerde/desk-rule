@@ -3081,6 +3081,11 @@ pub mod server_side {
     }
 
     #[no_mangle]
+    pub unsafe extern "system" fn Java_ffi_FFI_stopService(_env: JNIEnv, _class: JClass) {
+        config::Config::set_option("stop-service".into(), "Y".into());
+    }
+
+    #[no_mangle]
     pub unsafe extern "system" fn Java_ffi_FFI_translateLocale(
         env: JNIEnv,
         _class: JClass,

@@ -478,6 +478,9 @@ class ServerModel with ChangeNotifier {
         }
         _inputOk = value;
         break;
+      case "sharing":
+        _isStart = value;
+        break;
       default:
         return;
     }

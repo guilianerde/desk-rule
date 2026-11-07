@@ -259,6 +259,10 @@ class MainService : Service() {
     }
 
     override fun onDestroy() {
+        stopRemoteControl()
+        _isReady = false
+        stopCapture()
+        releaseMediaProjection()
         checkMediaPermission()
         stopService(Intent(this, FloatingWindowService::class.java))
         super.onDestroy()
@@ -436,6 +440,7 @@ class MainService : Service() {
             return
         }
         Log.d(logTag, "MediaProjection stopped")
+        stopRemoteControl()
         setMediaProjectionForegroundService(false)
         stopCapture()
         virtualDisplay?.release()
@@ -661,6 +666,7 @@ class MainService : Service() {
 
     fun destroy() {
         Log.d(logTag, "destroy service")
+        stopRemoteControl()
         _isReady = false
         _isAudioStart = false
 
@@ -678,6 +684,16 @@ class MainService : Service() {
         stopForeground(true)
         stopService(Intent(this, FloatingWindowService::class.java))
         stopSelf()
+    }
+
+    private fun stopRemoteControl() {
+        FFI.stopService()
+        Handler(Looper.getMainLooper()).post {
+            MainActivity.flutterMethodChannel?.invokeMethod(
+                "on_state_changed",
+                mapOf("name" to "sharing", "value" to "false")
+            )
+        }
     }
 
     fun checkMediaPermission(): Boolean {

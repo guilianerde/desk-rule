@@ -96,8 +96,8 @@ jobs:
           aapt="$ANDROID_HOME/build-tools/36.0.0/aapt"
           "$aapt" dump badging "$apk" | grep "package: name='org.desk_rule.android'"
           "$aapt" dump permissions "$apk" > "$RUNNER_TEMP/desk-rule-permissions.txt"
-          if grep -E 'android.permission.(RECORD_AUDIO|FOREGROUND_SERVICE_MICROPHONE)' "$RUNNER_TEMP/desk-rule-permissions.txt"; then
-            echo "Unexpected audio permission in the core-only APK" >&2
+          if grep -E 'android.permission.(CAMERA|RECORD_AUDIO|FOREGROUND_SERVICE_MICROPHONE)' "$RUNNER_TEMP/desk-rule-permissions.txt"; then
+            echo "Unexpected camera or audio permission in the core-only APK" >&2
             exit 1
           fi
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$apk"

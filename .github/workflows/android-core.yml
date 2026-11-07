@@ -84,7 +84,11 @@ jobs:
           mkdir -p "$output"
           cp target/aarch64-linux-android/release/liblibrustdesk.so "$output/librustdesk.so"
           cp "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so" "$output/"
-      - name: Build an installable test APK
+      - name: Set up Android SDK tools
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
+        with:
+          packages: platform-tools
+      - name: Package an installable test APK
         run: |
           sdkmanager "platforms;android-36" "build-tools;36.0.0"
           sed -i 's/signingConfig signingConfigs.release/signingConfig signingConfigs.debug/' flutter/android/app/build.gradle

@@ -42,7 +42,7 @@ class _DeskRuleHomeState extends State<DeskRuleHome> {
     _loading = true;
     try {
       final sharing = isAndroid
-          ? gFFI.serverModel.isStart && gFFI.serverModel.mediaOk
+          ? gFFI.serverModel.isStart
           : await bind.mainGetOption(key: kOptionStopService) == 'N';
       final key = sharing ? await bind.mainGetFingerprint() : '';
       final password = sharing ? await bind.mainGetTemporaryPassword() : '';
@@ -180,6 +180,9 @@ class _DeskRuleHomeState extends State<DeskRuleHome> {
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
                     title: const Text('Allow remote control'),
+                    subtitle: isAndroid && _sharing && !gFFI.serverModel.mediaOk
+                        ? const Text('Allow screen sharing in the Android prompt')
+                        : null,
                     value: _sharing,
                     onChanged: (_) => _toggleHost(),
                   ),

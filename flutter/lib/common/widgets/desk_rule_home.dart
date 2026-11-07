@@ -183,6 +183,14 @@ class _DeskRuleHomeState extends State<DeskRuleHome> {
                     value: _sharing,
                     onChanged: (_) => _toggleHost(),
                   ),
+                  if (isAndroid)
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Allow touch and keyboard control'),
+                      subtitle: const Text('Enable Desk Rule in Android accessibility settings'),
+                      value: gFFI.serverModel.inputOk,
+                      onChanged: (_) => gFFI.serverModel.toggleInput(),
+                    ),
                   if (_sharing) ...[
                     const Text('Share this device’s IP address, fingerprint and temporary password with your controller.'),
                     _copyable('Fingerprint', _hostKey),

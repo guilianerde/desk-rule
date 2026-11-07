@@ -12,9 +12,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
@@ -27,14 +25,14 @@
     </queries>
 
     <application
-        android:name=".MainApplication"
+        android:name="com.carriez.flutter_hbb.MainApplication"
         android:icon="@mipmap/ic_launcher"
-        android:label="RustDesk"
+        android:label="Desk Rule"
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true">
 
         <receiver
-            android:name=".BootReceiver"
+            android:name="com.carriez.flutter_hbb.BootReceiver"
             android:enabled="true"
             android:exported="true">
             <intent-filter android:priority="1000">
@@ -46,10 +44,10 @@
         </receiver>
 
         <service
-            android:name=".InputService"
+            android:name="com.carriez.flutter_hbb.InputService"
             android:enabled="true"
             android:exported="false"
-            android:label="RustDesk Input"
+            android:label="Desk Rule input"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />
@@ -61,7 +59,7 @@
         </service>
 
         <activity
-            android:name=".MainActivity"
+            android:name="com.carriez.flutter_hbb.MainActivity"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode|navigation"
             android:exported="true"
             android:hardwareAccelerated="true"
@@ -79,27 +77,27 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="rustdesk" />
+                <data android:scheme="desk-rule" />
             </intent-filter>
         </activity>
 
         <activity
-            android:name=".PermissionRequestTransparentActivity"
+            android:name="com.carriez.flutter_hbb.PermissionRequestTransparentActivity"
             android:excludeFromRecents="true"
             android:theme="@style/Transparent" />
 
         <service
-            android:name=".MainService"
+            android:name="com.carriez.flutter_hbb.MainService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="specialUse|mediaProjection|microphone">
+            android:foregroundServiceType="specialUse|mediaProjection">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="@string/foreground_service_special_use_subtype" />
         </service>
 
         <service
-            android:name=".FloatingWindowService"
+            android:name="com.carriez.flutter_hbb.FloatingWindowService"
             android:enabled="true" />
 
         <!--

@@ -47,7 +47,7 @@ import java.nio.ByteBuffer
 import kotlin.math.max
 import kotlin.math.min
 
-const val DEFAULT_NOTIFY_TITLE = "RustDesk"
+const val DEFAULT_NOTIFY_TITLE = "Desk Rule"
 const val DEFAULT_NOTIFY_TEXT = "Service is running"
 const val DEFAULT_NOTIFY_ID = 1
 const val NOTIFY_ID_OFFSET = 100
@@ -597,20 +597,10 @@ class MainService : Service() {
             return false
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val audioStarted = if (inVoiceCall) {
-                switchToVoiceCall()
-            } else {
-                audioRecordHandle.createAudioRecorder(false, mediaProjection) &&
-                        audioRecordHandle.startAudioRecorder()
-            }
-            Log.d(logTag, if (audioStarted) "audio recorder start" else "audio recorder start failed")
-        }
         captureRestartInVoiceCall = false
         checkMediaPermission()
         _isStart = true
         FFI.setFrameRawEnable("video",true)
-        MainActivity.rdClipboardManager?.setCaptureStarted(_isStart)
         return true
     }
 
@@ -740,7 +730,7 @@ class MainService : Service() {
                 true
             } else {
                 val display = mp.createVirtualDisplay(
-                    "RustDeskVD",
+                    "DeskRuleVD",
                     SCREEN_INFO.width, SCREEN_INFO.height, SCREEN_INFO.dpi, VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
                     s, null, null
                 )
@@ -816,13 +806,13 @@ class MainService : Service() {
     private fun initNotification() {
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationChannel = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channelId = "RustDesk"
-            val channelName = "RustDesk Service"
+            val channelId = "DeskRule"
+            val channelName = "Desk Rule Service"
             val channel = NotificationChannel(
                 channelId,
                 channelName, NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "RustDesk Service Channel"
+                description = "Desk Rule Service Channel"
             }
             channel.lightColor = Color.BLUE
             channel.lockscreenVisibility = Notification.VISIBILITY_PRIVATE

@@ -1,0 +1,37 @@
+name: Desk Rule Android
+
+on:
+  push:
+    branches: [android-core]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  flutter-check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Restore the existing Flutter bridge
+        run: |
+          echo 'b24fe8739d3d7bb74a3a167653cdda6acf0a6b65ae3e485421e248812627f3e8  res/flutter-bridge.zip' | sha256sum --check
+          python3 -m zipfile -e res/flutter-bridge.zip .
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          flutter-version: 3.24.5
+          cache: true
+      - name: Resolve Flutter packages
+        working-directory: flutter
+        run: flutter pub get
+      - name: Check the Android core UI
+        working-directory: flutter
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/common/widgets/desk_rule_home.dart lib/main.dart lib/models/server_model.dart
+      - name: Test address formatting and input modifiers
+        working-directory: flutter
+        run: flutter test test/id_formatter_test.dart test/input_modifier_utils_test.dart

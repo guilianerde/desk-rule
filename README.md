@@ -26,6 +26,14 @@ cargo build --locked --release --features inline --bin desk-rule
 
 把平台对应的 [Sciter 运行库](https://github.com/c-smile/sciter-sdk) 放在二进制旁。macOS 应用包也可以把 `libsciter.dylib` 放在 `Contents/Frameworks`。Flutter 源码保留原有 Rust bridge 接口，Flutter 构建仍需要项目原有的生成绑定。
 
+### Android ARM64 开发测试包
+
+Android 的适配目前在 `android-core` 分支，尚未完成真机互控验收。运行 **Desk Rule Android** 工作流可构建 `desk-rule-android-arm64-test.apk`。这是使用调试密钥签名的开发测试包，应用 ID 为 `org.desk_rule.android`。
+
+在 Android 上打开 **Allow remote control**，并同意系统投屏授权。需要操作手机时，再打开 **Allow touch and keyboard control**，在辅助功能设置中启用 **Desk Rule input**。电脑通过手机可达的 IP、指纹和临时密码连接，默认 TCP 21118。停止应用内共享或系统投屏后，应检查远程画面停止、会话断开且端口关闭。
+
+Flutter 构建可用 `python3 -m zipfile -e res/flutter-bridge.zip .` 恢复已生成的绑定；来源与校验值见 [res/flutter-bridge.md](res/flutter-bridge.md)。Android 构建步骤见 [.github/workflows/android-core.yml](.github/workflows/android-core.yml)。
+
 ### Windows x64 便携包
 
 在 Windows 上准备 Visual Studio 的 x64 C++ Build Tools、Rust MSVC 工具链、Python 3、LLVM 和已运行过 `bootstrap-vcpkg.bat` 的 vcpkg。vcpkg 可以使用 `vcpkg.json` 中记录的上游基线。然后在源码目录的 PowerShell 中运行：

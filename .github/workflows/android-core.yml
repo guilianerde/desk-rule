@@ -92,6 +92,7 @@ jobs:
         run: |
           sdkmanager "platforms;android-36" "build-tools;36.0.0"
           sed -i 's/signingConfig signingConfigs.release/signingConfig signingConfigs.debug/' flutter/android/app/build.gradle
+          sed -i 's/-Xmx1024M/-Xmx4G/' flutter/android/gradle.properties
           cd flutter
           flutter build apk --release --split-per-abi --target-platform android-arm64
       - name: Verify the APK identity, permissions and signature

@@ -52,6 +52,7 @@ function adaptDisplay() {
     var h = display_height;
     if (!w || !h) return;
     var style = handler.get_view_style();
+    if (get_peer_platform() == "Android") style = "shrink";
     display_scale = 1.;
     cursor_scale = 1.;
     var (sx, sy, sw, sh) = view.screenBox(view.windowState == View.WINDOW_FULL_SCREEN ? #frame : #workarea, #rectw);
@@ -102,6 +103,10 @@ function adaptDisplay() {
         height: h / scaleFactor + "px",
     };
 }
+
+view.on("size", function() {
+    if (get_peer_platform() == "Android") adaptDisplay();
+});
 
 // https://sciter.com/event-handling/
 // https://sciter.com/docs/content/sciter/Event.htm

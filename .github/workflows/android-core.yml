@@ -113,7 +113,7 @@ jobs:
             exit 1
           fi
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$apk" > "$RUNNER_TEMP/desk-rule-signature.txt"
-          grep -i '5683b37eca476cbd89ffe73f2b1ed5b5c1c8fba77dc538663265bb5ed1d5ec71' "$RUNNER_TEMP/desk-rule-signature.txt"
+          grep -i '5683b37eca476cbd89ffe73f2b1e67b5c1c8fba77dc538663265bb5ed1d5ec71' "$RUNNER_TEMP/desk-rule-signature.txt"
           mkdir -p dist
           cp "$apk" dist/desk-rule-android-arm64-test.apk
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

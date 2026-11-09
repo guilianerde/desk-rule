@@ -2852,6 +2852,12 @@ pub async fn handle_hash(
     trust: &mut crate::trusted_devices::client::Session,
     peer: &mut Stream,
 ) -> bool {
+    {
+        let mut login = lc.write().unwrap();
+        if let Some(fingerprint) = login.verified_fingerprint.clone() {
+            login.bind_verified_fingerprint(&fingerprint);
+        }
+    }
     lc.write().unwrap().hash = hash.clone();
     // Take care of password application order
 
@@ -3069,6 +3075,12 @@ pub async fn handle_login_from_ui(
     trust: &mut crate::trusted_devices::client::Session,
     peer: &mut Stream,
 ) -> ResultType<()> {
+    {
+        let mut login = lc.write().unwrap();
+        if let Some(fingerprint) = login.verified_fingerprint.clone() {
+            login.bind_verified_fingerprint(&fingerprint);
+        }
+    }
     let mut hash_password = if password.is_empty() {
         let mut password2 = lc.read().unwrap().password.clone();
         if password2.is_empty() {

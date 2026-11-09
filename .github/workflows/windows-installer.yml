@@ -31,6 +31,16 @@ jobs:
           $payload = Join-Path $env:RUNNER_TEMP 'desk-rule-portable\desk-rule-windows-x64'
           & "${env:ProgramFiles(x86)}\NSIS\makensis.exe" /NOCD "/DPAYLOAD_DIR=$payload" scripts/windows-installer.nsi
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Verify installer on Windows
+        shell: pwsh
+        run: |
+          $install = Join-Path $env:RUNNER_TEMP 'desk-rule-install-test'
+          $setup = Join-Path $PWD 'desk-rule-windows-x64-test-setup.exe'
+          $result = Start-Process -FilePath $setup -ArgumentList @('/S', "/D=$install") -Wait -PassThru
+          if ($result.ExitCode -ne 0) { throw "Installer failed: $($result.ExitCode)" }
+          foreach ($name in @('desk-rule.exe', 'sciter.dll', 'LICENCE', 'README.md', 'Uninstall.exe')) {
+            if (-not (Test-Path (Join-Path $install $name))) { throw "Missing installed file: $name" }
+          }
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: desk-rule-windows-x64-test-installer

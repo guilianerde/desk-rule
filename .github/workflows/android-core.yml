@@ -89,9 +89,16 @@ jobs:
         with:
           packages: platform-tools
       - name: Package an installable test APK
+        env:
+          DESK_RULE_ANDROID_KEYSTORE_B64: ${{ secrets.DESK_RULE_ANDROID_KEYSTORE_B64 }}
+          DESK_RULE_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.DESK_RULE_ANDROID_KEYSTORE_PASSWORD }}
+          DESK_RULE_ANDROID_KEY_ALIAS: desk-rule-test
         run: |
+          test -n "$DESK_RULE_ANDROID_KEYSTORE_B64" && test -n "$DESK_RULE_ANDROID_KEYSTORE_PASSWORD"
+          export DESK_RULE_ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/desk-rule-test.p12"
+          umask 077
+          printf '%s' "$DESK_RULE_ANDROID_KEYSTORE_B64" | base64 --decode > "$DESK_RULE_ANDROID_KEYSTORE_PATH"
           sdkmanager "platforms;android-36" "build-tools;36.0.0"
-          sed -i 's/signingConfig signingConfigs.release/signingConfig signingConfigs.debug/' flutter/android/app/build.gradle
           sed -i 's/-Xmx1024M/-Xmx4G/' flutter/android/gradle.properties
           cd flutter
           flutter build apk --release --split-per-abi --target-platform android-arm64
@@ -105,7 +112,8 @@ jobs:
             echo "Unexpected camera or audio permission in the core-only APK" >&2
             exit 1
           fi
-          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$apk"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$apk" > "$RUNNER_TEMP/desk-rule-signature.txt"
+          grep -i '5683b37eca476cbd89ffe73f2b1ed5b5c1c8fba77dc538663265bb5ed1d5ec71' "$RUNNER_TEMP/desk-rule-signature.txt"
           mkdir -p dist
           cp "$apk" dist/desk-rule-android-arm64-test.apk
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

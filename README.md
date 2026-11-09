@@ -30,7 +30,9 @@ cargo build --locked --release --features inline --bin desk-rule
 
 ### Android ARM64 开发测试包
 
-Android 的适配目前在 `android-core` 分支，尚未完成真机互控验收。运行 **Desk Rule Android** 工作流可构建 `desk-rule-android-arm64-test.apk`。这是使用调试密钥签名的开发测试包，应用 ID 为 `org.desk_rule.android`。
+Android 的适配目前在 `android-core` 分支，尚未完成真机互控验收。运行 **Desk Rule Android** 工作流可构建 `desk-rule-android-arm64-test.apk`。该开发测试包使用 Desk Rule 专用测试证书签名，应用 ID 为 `org.desk_rule.android`。首次从旧调试签名版本迁移时需卸载旧应用，会清除应用数据；此后由同一证书签名的版本可以覆盖安装。
+
+工作流从 GitHub Actions Secrets `DESK_RULE_ANDROID_KEYSTORE_B64` 和 `DESK_RULE_ANDROID_KEYSTORE_PASSWORD` 读取测试密钥。请在安全位置备份密钥文件及密码；失去密钥后无法用新证书覆盖升级已有安装。此自签名证书仅用于测试，不代表 Google Play 或其他平台的发布认证。
 
 在 Android 上打开 **Allow remote control**，并同意系统投屏授权。需要操作手机时，再打开 **Allow touch and keyboard control**，在辅助功能设置中启用 **Desk Rule input**。电脑通过手机可达的 IP、指纹和临时密码连接，默认 TCP 21118。停止应用内共享或系统投屏后，应检查远程画面停止、会话断开且端口关闭。
 

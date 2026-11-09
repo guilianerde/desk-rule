@@ -104,6 +104,24 @@ pub const LOGIN_MSG_2FA_WRONG: &str = "Wrong 2FA Code";
 pub const REQUIRE_2FA: &'static str = "2FA Required";
 pub const LOGIN_MSG_NO_PASSWORD_ACCESS: &str = "No Password Access";
 pub const LOGIN_MSG_OFFLINE: &str = "Offline";
+
+#[cfg(test)]
+mod desk_rule_password_tests {
+    use super::LoginConfigHandler;
+
+    #[test]
+    fn saved_password_is_only_used_for_its_verified_fingerprint() {
+        let mut login = LoginConfigHandler::default();
+        login.config.password = vec![1, 2, 3];
+        login.config.options.insert("desk-rule-password-fingerprint".into(), "first".into());
+        login.bind_verified_fingerprint("first");
+        assert_eq!(login.config.password, vec![1, 2, 3]);
+        login.password = vec![1, 2, 3];
+        login.bind_verified_fingerprint("second");
+        assert!(login.config.password.is_empty());
+        assert!(login.password.is_empty());
+    }
+}
 pub const LOGIN_SCREEN_WAYLAND: &str = "Wayland login screen is not supported";
 #[cfg(target_os = "linux")]
 pub const SCRAP_UBUNTU_HIGHER_REQUIRED: &str = "ubuntu-21-04-required";
@@ -1138,6 +1156,7 @@ pub struct LoginConfigHandler {
     pub is_terminal_admin: bool,
     hash: Hash,
     password: Vec<u8>, // remember password for reconnect
+    verified_fingerprint: Option<String>,
     pub remember: bool,
     login_method: login_method::LoginMethod,
     config: PeerConfig,
@@ -1198,6 +1217,15 @@ impl Deref for LoginConfigHandler {
 }
 
 impl LoginConfigHandler {
+    fn bind_verified_fingerprint(&mut self, fingerprint: &str) {
+        const KEY: &str = "desk-rule-password-fingerprint";
+        if self.config.options.get(KEY).map(String::as_str) != Some(fingerprint) {
+            self.config.password.clear();
+            self.password.clear();
+            self.remember = false;
+        }
+        self.verified_fingerprint = Some(fingerprint.to_owned());
+    }
     pub(crate) fn set_hash(&mut self, hash: Hash) {
         self.hash = hash;
     }
@@ -1969,6 +1997,9 @@ impl LoginConfigHandler {
         let password0 = config.password.clone();
         let remember = self.remember;
         let hash = self.hash.clone();
+        if let Some(fingerprint) = &self.verified_fingerprint {
+            config.options.insert("desk-rule-password-fingerprint".to_owned(), fingerprint.clone());
+        }
         if remember && !self.skips_saved_password() {
             // remember is true: use PeerConfig password or ui login
             // not sync shared password to recent
@@ -2002,24 +2033,6 @@ impl LoginConfigHandler {
             config
                 .options
                 .insert("force-always-relay".to_owned(), "Y".to_owned());
-        }
-        #[cfg(feature = "flutter")]
-        {
-            // sync connected password to personal ab automatically if it is not shared password
-            if !self.skips_saved_password()
-                && !config.password.is_empty()
-                && !self.password_source.is_shared_ab(&password, &hash)
-                && !self.password_source.is_personal_ab(&password)
-            {
-                let hash = base64::encode(config.password.clone(), base64::Variant::Original);
-                let evt: HashMap<&str, String> = HashMap::from([
-                    ("name", "sync_peer_hash_password_to_personal_ab".to_string()),
-                    ("id", self.id.clone()),
-                    ("hash", hash),
-                ]);
-                let evt = serde_json::ser::to_string(&evt).unwrap_or("".to_owned());
-                crate::flutter::push_global_event(crate::flutter::APP_TYPE_MAIN, evt);
-            }
         }
         if config.keyboard_mode.is_empty() {
             if is_keyboard_mode_supported(

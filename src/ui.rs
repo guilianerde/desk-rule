@@ -229,8 +229,8 @@ impl UI {
         update_temporary_password()
     }
 
-    fn set_permanent_password(&self, password: String) {
-        let _ = set_permanent_password_with_result(password);
+    fn set_permanent_password(&self, password: String) -> bool {
+        set_permanent_password_with_result(password)
     }
 
     fn is_local_permanent_password_set(&self) -> bool {

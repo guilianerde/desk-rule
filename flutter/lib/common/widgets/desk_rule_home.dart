@@ -95,6 +95,40 @@ class _DeskRuleHomeState extends State<DeskRuleHome> {
     if (mounted) await connect(context, address);
   }
 
+  Future<void> _setPermanentPassword() async {
+    final password = TextEditingController();
+    final confirmation = TextEditingController();
+    final value = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Set permanent password'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(controller: password, obscureText: true,
+              decoration: const InputDecoration(labelText: 'Password')),
+          TextField(controller: confirmation, obscureText: true,
+              decoration: const InputDecoration(labelText: 'Confirm password')),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(onPressed: () {
+            if (password.text.isNotEmpty && password.text == confirmation.text) {
+              Navigator.pop(context, password.text);
+            }
+          }, child: const Text('Save')),
+        ],
+      ),
+    );
+    password.dispose();
+    confirmation.dispose();
+    if (value == null) return;
+    final saved = await bind.mainSetPermanentPasswordWithResult(password: value);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(saved ? 'Permanent password saved' : 'Could not save password'),
+      ));
+    }
+  }
+
   Widget _copyable(String label, String value) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
@@ -195,6 +229,8 @@ class _DeskRuleHomeState extends State<DeskRuleHome> {
                       onChanged: (_) => gFFI.serverModel.toggleInput(),
                     ),
                   if (_sharing) ...[
+                    TextButton(onPressed: _setPermanentPassword,
+                        child: const Text('Set permanent password')),
                     const Text('Share this device’s IP address, fingerprint and temporary password with your controller.'),
                     _copyable('Fingerprint', _hostKey),
                     _copyable('Temporary password', _passcode),

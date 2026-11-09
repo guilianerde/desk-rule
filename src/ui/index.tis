@@ -37,6 +37,18 @@ event click $(#sharing) {
     refreshHost();
 }
 
+event click $(#save-password) {
+    var password = $(#permanent-password).value || "";
+    if (!password || password != $(#confirm-password).value) {
+        $(#password-status).text = "Enter matching passwords.";
+        return;
+    }
+    var saved = handler.set_permanent_password(password);
+    $(#permanent-password).value = "";
+    $(#confirm-password).value = "";
+    $(#password-status).text = saved ? "Permanent password saved." : "Could not save password.";
+}
+
 function self.ready() {
     view.windowMinSize = (440, 400);
     centerize(scaleIt(520), scaleIt(470));

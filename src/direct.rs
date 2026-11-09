@@ -51,7 +51,7 @@ pub fn init_config() {
         options.insert("access-mode".into(), "custom".into());
         options.insert(
             "verification-method".into(),
-            "use-temporary-password".into(),
+            "use-both-passwords".into(),
         );
         options.insert("approve-mode".into(), "password".into());
         options.insert("2fa".into(), String::new());

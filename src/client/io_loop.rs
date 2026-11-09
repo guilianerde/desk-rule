@@ -176,6 +176,7 @@ impl<T: InvokeUiSession> Remote<T> {
         let mut received = false;
         match Client::start(&self.handler.get_id(), self.handler.clone()).await {
             Ok((mut peer, pk)) => {
+                self.handler.lc.write().unwrap().bind_verified_fingerprint(&hex::encode(&pk));
                 let direct = true;
                 self.handler
                     .connection_round_state

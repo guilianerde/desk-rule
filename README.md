@@ -4,6 +4,10 @@ Desk Rule 是基于 RustDesk 的点对点远程桌面。主控端直接连接被
 
 应用保留远程画面、鼠标、键盘、设备身份校验，以及临时密码和可选永久密码。连接路径移除了 RustDesk 的 ID 注册、打洞、中继和在线查询。桌面会话只允许控制所需的协议消息。
 
+## 下载安装
+
+前往 [GitHub Releases 下载页面](https://github.com/guilianerde/desk-rule/releases)，选择适合设备的 Android、Windows 或 macOS 测试版。安装要求及签名说明请参阅发布页面。
+
 ## 使用
 
 1. 两台设备都打开 Desk Rule。macOS 被控端需要在系统设置中允许 Desk Rule 使用「屏幕录制」和「辅助功能」。

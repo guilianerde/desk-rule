@@ -2932,23 +2932,6 @@ pub async fn handle_hash(
             lc.write().unwrap().password_source = Default::default();
         }
     }
-    // personal ab password
-    if password.is_empty() {
-        try_get_password_from_personal_ab(lc.clone(), &mut password);
-    }
-
-    if password.is_empty() {
-        let p = crate::ui_interface::get_builtin_option(keys::OPTION_DEFAULT_CONNECT_PASSWORD);
-        if !p.is_empty() {
-            let mut hasher = Sha256::new();
-            hasher.update(p.clone());
-            hasher.update(&hash.salt);
-            let res = hasher.finalize();
-            password = res[..].into();
-            lc.write().unwrap().password_source = PasswordSource::SharedAb(p); // reuse SharedAb here
-        }
-    }
-
     lc.write().unwrap().password = password.clone();
 
     let request_approval = lc.read().unwrap().skips_saved_password();
@@ -3004,31 +2987,6 @@ pub async fn handle_hash(
     }
     lc.write().unwrap().hash = hash;
     true
-}
-
-#[inline]
-fn try_get_password_from_personal_ab(lc: Arc<RwLock<LoginConfigHandler>>, password: &mut Vec<u8>) {
-    let access_token = LocalConfig::get_option("access_token");
-    let ab = config::Ab::load();
-    if !access_token.is_empty() && access_token == ab.access_token {
-        let id = lc.read().unwrap().id.clone();
-        if let Some(ab) = ab.ab_entries.iter().find(|a| a.personal()) {
-            if let Some(p) = ab
-                .peers
-                .iter()
-                .find_map(|p| if p.id == id { Some(p) } else { None })
-            {
-                if let Ok(hash_password) = base64::decode(p.hash.clone(), base64::Variant::Original)
-                {
-                    if !hash_password.is_empty() {
-                        *password = hash_password.clone();
-                        lc.write().unwrap().password_source =
-                            PasswordSource::PersonalAb(hash_password);
-                    }
-                }
-            }
-        }
-    }
 }
 
 /// Send login message to peer.

@@ -1,0 +1,33 @@
+name: Desk Rule Windows test installer
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  installer:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+      - name: Download and verify tested portable package
+        shell: pwsh
+        run: |
+          $zip = Join-Path $env:RUNNER_TEMP 'desk-rule-windows-x64.zip'
+          Invoke-WebRequest 'https://github.com/guilianerde/desk-rule/releases/download/v0.1.0-test.1/desk-rule-windows-x64-test.zip' -OutFile $zip
+          if ((Get-FileHash $zip -Algorithm SHA256).Hash -ne '6F14EE014AC08B57AFC676C74700F3C2FFF336159A78CD97A94893321F4AA2F3') { throw 'Unexpected portable package hash' }
+          Expand-Archive $zip -DestinationPath (Join-Path $env:RUNNER_TEMP 'desk-rule-portable')
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $payload = Join-Path $env:RUNNER_TEMP 'desk-rule-portable\desk-rule-windows-x64'
+          & "${env:ProgramFiles(x86)}\NSIS\makensis.exe" /NOCD "/DPAYLOAD_DIR=$payload" scripts/windows-installer.nsi
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: desk-rule-windows-x64-test-installer
+          path: desk-rule-windows-x64-test-setup.exe
+          if-no-files-found: error

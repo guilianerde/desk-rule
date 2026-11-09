@@ -2,6 +2,11 @@ name: Desk Rule Windows test installer
 
 on:
   workflow_dispatch:
+  push:
+    branches: [android-core]
+    paths:
+      - '.github/workflows/windows-installer.yml'
+      - 'scripts/windows-installer.nsi'
 
 permissions:
   contents: read

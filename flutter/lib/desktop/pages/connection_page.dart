@@ -2,10 +2,8 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_hbb/common/widgets/connection_page_title.dart';
 import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_hbb/desktop/widgets/popup_menu.dart';
 import 'package:flutter_hbb/models/state_model.dart';
@@ -202,7 +200,6 @@ class _ConnectionPageState extends State<ConnectionPage>
   /// Controller for the id input bar.
   final _idController = IDTextEditingController();
 
-  final RxBool _idInputFocused = false.obs;
   final FocusNode _idFocusNode = FocusNode();
   final TextEditingController _idEditingController = TextEditingController();
 
@@ -214,8 +211,6 @@ class _ConnectionPageState extends State<ConnectionPage>
 
   // https://github.com/flutter/flutter/issues/157244
   Iterable<Peer> _autocompleteOpts = [];
-
-  final _menuOpen = false.obs;
 
   @override
   void initState() {
@@ -289,7 +284,6 @@ class _ConnectionPageState extends State<ConnectionPage>
   }
 
   void onFocusChanged() {
-    _idInputFocused.value = _idFocusNode.hasFocus;
     if (_idFocusNode.hasFocus) {
       if (_allPeersLoader.needLoad) {
         _allPeersLoader.getAllPeers();
@@ -310,12 +304,10 @@ class _ConnectionPageState extends State<ConnectionPage>
         Expanded(
             child: Column(
           children: [
-            Row(
-              children: [
-                Flexible(child: _buildRemoteIDTextField(context)),
-              ],
-            ).marginOnly(top: 22),
-            SizedBox(height: 12),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: _buildRemoteIDTextField(context),
+            ).paddingOnly(top: 16, right: 12, bottom: 8),
             Divider().paddingOnly(right: 12),
             Expanded(child: PeerTabPage()),
           ],
@@ -376,16 +368,40 @@ class _ConnectionPageState extends State<ConnectionPage>
   /// UI for the remote ID TextField.
   /// Search for a peer.
   Widget _buildRemoteIDTextField(BuildContext context) {
-    var w = Container(
-      width: 320 + 20 * 2,
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 22),
-      decoration: BoxDecoration(
-          borderRadius: const BorderRadius.all(Radius.circular(13)),
-          border: Border.all(color: Theme.of(context).colorScheme.background)),
-      child: Ink(
+    final theme = Theme.of(context);
+    final controlBorder =
+        BorderSide(color: theme.colorScheme.onSurface.withOpacity(0.48));
+    return Material(
+      color: theme.cardColor,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: 480,
+        padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            getConnectionPageTitle(context, false).marginOnly(bottom: 15),
+            Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    translate('Control Remote Desktop'),
+                    style: theme.textTheme.titleLarge
+                        ?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Tooltip(
+                  waitDuration: const Duration(milliseconds: 300),
+                  message: translate('id_input_tip'),
+                  child: Icon(
+                    Icons.help_outline_outlined,
+                    size: 16,
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
@@ -447,36 +463,41 @@ class _ConnectionPageState extends State<ConnectionPage>
                   ) {
                     updateTextAndPreserveSelection(
                         fieldTextEditingController, _idController.text);
-                    return Obx(() => TextField(
-                          autocorrect: false,
-                          enableSuggestions: false,
-                          keyboardType: TextInputType.visiblePassword,
-                          focusNode: fieldFocusNode,
-                          style: const TextStyle(
-                            fontFamily: 'WorkSans',
-                            fontSize: 22,
-                            height: 1.4,
-                          ),
-                          maxLines: 1,
-                          cursorColor:
-                              Theme.of(context).textTheme.titleLarge?.color,
-                          decoration: InputDecoration(
-                              filled: false,
-                              counterText: '',
-                              hintText: _idInputFocused.value
-                                  ? null
-                                  : translate('Enter Remote ID'),
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 15, vertical: 13)),
-                          controller: fieldTextEditingController,
-                          inputFormatters: [IDTextInputFormatter()],
-                          onChanged: (v) {
-                            _idController.id = v;
-                          },
-                          onSubmitted: (_) {
-                            onConnect();
-                          },
-                        ).workaroundFreezeLinuxMint());
+                    return TextField(
+                      autocorrect: false,
+                      enableSuggestions: false,
+                      keyboardType: TextInputType.visiblePassword,
+                      focusNode: fieldFocusNode,
+                      style: const TextStyle(
+                        fontFamily: 'WorkSans',
+                        fontSize: 22,
+                        height: 1.4,
+                      ),
+                      maxLines: 1,
+                      cursorColor: theme.textTheme.titleLarge?.color,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: theme.scaffoldBackgroundColor,
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: controlBorder,
+                        ),
+                        counterText: '',
+                        labelText: translate('Enter Remote ID'),
+                        floatingLabelBehavior: FloatingLabelBehavior.always,
+                        floatingLabelStyle: theme.textTheme.titleSmall,
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 12),
+                      ),
+                      controller: fieldTextEditingController,
+                      inputFormatters: [IDTextInputFormatter()],
+                      onChanged: (v) {
+                        _idController.id = v;
+                      },
+                      onSubmitted: (_) {
+                        onConnect();
+                      },
+                    ).workaroundFreezeLinuxMint();
                   },
                   onSelected: (option) {
                     setState(() {
@@ -548,117 +569,79 @@ class _ConnectionPageState extends State<ConnectionPage>
                 )),
               ],
             ),
-            Padding(
-              padding: const EdgeInsets.only(top: 13.0),
-              child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-                SizedBox(
-                  height: 28.0,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      onConnect();
-                    },
-                    child: Text(translate("Connect")),
+            const SizedBox(height: 12),
+            Wrap(
+              alignment: WrapAlignment.end,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(0, 44),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    visualDensity: VisualDensity.standard,
+                    elevation: 0,
+                    backgroundColor: Color.alphaBlend(
+                        Colors.black.withOpacity(0.06), MyTheme.accent),
+                    foregroundColor: Colors.white,
                   ),
+                  onPressed: () => onConnect(),
+                  child:
+                      Text(translate('Connect'), textAlign: TextAlign.center),
                 ),
-                const SizedBox(width: 8),
-                Container(
-                  height: 28.0,
-                  width: 28.0,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Theme.of(context).dividerColor),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Center(
-                    child: StatefulBuilder(
-                      builder: (context, setState) {
-                        var offset = Offset(0, 0);
-                        return Obx(() => InkWell(
-                              child: _menuOpen.value
-                                  ? Transform.rotate(
-                                      angle: pi,
-                                      child: Icon(IconFont.more, size: 14),
-                                    )
-                                  : Icon(IconFont.more, size: 14),
-                              onTapDown: (e) {
-                                offset = e.globalPosition;
-                              },
-                              onTap: () async {
-                                _menuOpen.value = true;
-                                final x = offset.dx;
-                                final y = offset.dy;
-                                await mod_menu
-                                    .showMenu(
-                                  context: context,
-                                  position: RelativeRect.fromLTRB(x, y, x, y),
-                                  items: [
-                                    (
-                                      'Transfer file',
-                                      () => onConnect(isFileTransfer: true)
-                                    ),
-                                    (
-                                      'View camera',
-                                      () => onConnect(isViewCamera: true)
-                                    ),
-                                    (
-                                      '${translate('Terminal')} (beta)',
-                                      () => onConnect(isTerminal: true)
-                                    ),
-                                    // `connect` routes this through the
-                                    // desktop path only; the peer card gates
-                                    // it the same way.
-                                    if (isDesktop)
-                                      (
-                                        'TCP tunneling',
-                                        () => onConnect(isTcpTunneling: true)
-                                      ),
-                                  ]
-                                      .map<MenuEntryBase<String>>(
-                                          (e) => MenuEntryButton<String>(
-                                            childBuilder: (TextStyle? style) =>
-                                                Text(
-                                              translate(e.$1),
-                                              style: style,
-                                            ),
-                                            proc: () => e.$2(),
-                                            padding: EdgeInsets.symmetric(
-                                                horizontal:
-                                                    kDesktopMenuPadding.left),
-                                            dismissOnClicked: true,
-                                          ))
-                                      .followedBy([
-                                        MenuEntryDivider<String>(),
-                                        _requestApprovalMenu(context),
-                                      ])
-                                      .map((e) => e.build(
-                                          context,
-                                          const MenuConfig(
-                                              commonColor: CustomPopupMenuTheme
-                                                  .commonColor,
-                                              height:
-                                                  CustomPopupMenuTheme.height,
-                                              dividerHeight:
-                                                  CustomPopupMenuTheme
-                                                      .dividerHeight)))
-                                      .expand((i) => i)
-                                      .toList(),
-                                  elevation: 8,
-                                )
-                                    .then((_) {
-                                  _menuOpen.value = false;
-                                });
-                              },
-                            ));
-                      },
+                mod_menu.PopupMenuButton<String>(
+                  tooltip: translate('More'),
+                  position: mod_menu.PopupMenuPosition.under,
+                  elevation: 8,
+                  itemBuilder: (context) => [
+                    ('Transfer file', () => onConnect(isFileTransfer: true)),
+                    ('View camera', () => onConnect(isViewCamera: true)),
+                    (
+                      '${translate('Terminal')} (beta)',
+                      () => onConnect(isTerminal: true)
                     ),
+                    // `connect` routes this through the desktop path only.
+                    if (isDesktop)
+                      ('TCP tunneling', () => onConnect(isTcpTunneling: true)),
+                  ]
+                      .map<MenuEntryBase<String>>(
+                          (action) => MenuEntryButton<String>(
+                                childBuilder: (style) =>
+                                    Text(translate(action.$1), style: style),
+                                proc: action.$2,
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: kDesktopMenuPadding.left),
+                                dismissOnClicked: true,
+                              ))
+                      .followedBy([
+                        MenuEntryDivider<String>(),
+                        _requestApprovalMenu(context),
+                      ])
+                      .expand((entry) => entry.build(
+                          context,
+                          const MenuConfig(
+                              commonColor: CustomPopupMenuTheme.commonColor,
+                              height: CustomPopupMenuTheme.height,
+                              dividerHeight:
+                                  CustomPopupMenuTheme.dividerHeight)))
+                      .toList(),
+                  child: Ink(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      border: Border.fromBorderSide(controlBorder),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.more_horiz, size: 20),
                   ),
                 ),
-              ]),
+              ],
             ),
           ],
         ),
       ),
     );
-    return Container(
-        constraints: const BoxConstraints(maxWidth: 600), child: w);
   }
 }

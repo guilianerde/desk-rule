@@ -1,46 +1,202 @@
+var root = self;
+var stopPending = false;
+var connectPending = false;
+var lastAddresses = "";
+
+function fingerprintHex(value) {
+    return (value || "").replace(/[^0-9a-fA-F]/g, "").toLowerCase();
+}
+
+function formatFingerprint(value) {
+    var hex = fingerprintHex(value);
+    var out = "";
+    for (var i = 0; i < hex.length; i += 8) {
+        if (i > 0) out += " ";
+        out += hex.substring(i, i + 8);
+    }
+    return out;
+}
+
+function copyText(text, button) {
+    if (!text) return;
+    try {
+        Clipboard.writeText(text);
+        button.text = "Copied";
+        root.timer(1200ms, function() { button.text = "Copy"; });
+    } catch (e) {
+        button.text = "Copy failed";
+    }
+}
+
+function renderAddresses(value) {
+    var list = [];
+    var parts = (value || "").split("\n");
+    for (var i = 0; i < parts.length; i++) {
+        if (parts[i]) list.push(parts[i]);
+    }
+    if (list.join("\n") == lastAddresses) return;
+    lastAddresses = list.join("\n");
+    var has = list.length > 0;
+    $(#local-addresses).style#display = has ? "inline-block" : "none";
+    $(#copy-address).style#display = has ? "inline-block" : "none";
+    $(#no-address).style#display = has ? "none" : "block";
+    if (!has) return;
+    var html = "";
+    for (var i = 0; i < list.length; i++) {
+        html += "<option>" + list[i] + "</option>";
+    }
+    $(#local-addresses).html = html;
+}
+
+function updateFingerprintHint() {
+    var length = fingerprintHex($(#fingerprint).value).length;
+    var hint = $(#fingerprint-hint);
+    if (length == 0) {
+        hint.text = "Compare each character with the fingerprint shown on the controlled device.";
+        hint.attributes.toggleClass("ok", false);
+    } else if (length == 64) {
+        hint.text = "Fingerprint format looks correct.";
+        hint.attributes.toggleClass("ok", true);
+    } else {
+        hint.text = length + " of 64 characters.";
+        hint.attributes.toggleClass("ok", false);
+    }
+}
+
+function connectNow() {
+    if (connectPending) return;
+    var raw = ($(#peer).value || "").trim();
+    var address = raw ? handler.normalize_direct_address(raw) : "";
+    if (!address) {
+        $(#error).text = "Enter a valid device IP address.";
+        view.focus = $(#peer);
+        return;
+    }
+    var fingerprint = fingerprintHex($(#fingerprint).value);
+    if (fingerprint.length != 64) {
+        $(#error).text = "Enter the 64-character fingerprint shown on the controlled device.";
+        view.focus = $(#fingerprint);
+        return;
+    }
+    $(#error).text = "";
+    handler.set_local_option("peer-fingerprint-" + address, fingerprint);
+    connectPending = true;
+    var button = $(#connect);
+    button.state.disabled = true;
+    button.text = "Connecting…";
+    root.timer(4s, function() {
+        if (!connectPending) return;
+        connectPending = false;
+        button.state.disabled = false;
+        button.text = "Connect";
+    });
+    handler.new_remote(address, "connect", false);
+}
+
 function refreshHost() {
     var enabled = handler.get_option("stop-service") == "N";
-    $(#sharing).text = enabled ? "Stop sharing" : "Start sharing";
+    if (!stopPending) $(#sharing).text = enabled ? "Stop sharing" : "Start sharing";
+    $(#share-text).text = enabled ? "Sharing on port 21118" : "Not sharing";
+    $(#share-dot).attributes.toggleClass("on", enabled);
     $(#host-info).style#display = enabled ? "block" : "none";
     if (enabled) {
-        $(#local-fingerprint).value = handler.get_fingerprint();
-        $(#local-passcode).value = handler.temporary_password();
+        var fingerprint = formatFingerprint(handler.get_fingerprint());
+        if ($(#local-fingerprint).text != fingerprint) $(#local-fingerprint).text = fingerprint;
+        var password = handler.temporary_password();
+        if ($(#local-passcode).value != password) $(#local-passcode).value = password;
+        renderAddresses(handler.direct_addresses());
     }
     return true;
 }
 
 event change $(#peer) {
-    var address = ($(#peer).value || "").trim();
-    $(#fingerprint).value = handler.get_local_option("peer-fingerprint-" + address);
+    var raw = ($(#peer).value || "").trim();
+    $(#error).text = "";
+    if (!raw) {
+        $(#fingerprint).value = "";
+        updateFingerprintHint();
+        return;
+    }
+    var address = handler.normalize_direct_address(raw) || raw;
+    var saved = handler.get_local_option("peer-fingerprint-" + address);
+    if (!saved && address != raw) {
+        saved = handler.get_local_option("peer-fingerprint-" + raw);
+    }
+    $(#fingerprint).value = fingerprintHex(saved);
+    updateFingerprintHint();
+}
+
+event change $(#fingerprint) {
+    $(#fingerprint).value = fingerprintHex($(#fingerprint).value);
+    updateFingerprintHint();
+    $(#error).text = "";
+}
+
+event keyup $(#fingerprint) {
+    updateFingerprintHint();
+}
+
+event keydown $(#peer) (evt) {
+    $(#error).text = "";
+    if (!evt.shortcutKey && isEnterKey(evt)) connectNow();
+}
+
+event keydown $(#fingerprint) (evt) {
+    $(#error).text = "";
+    if (!evt.shortcutKey && isEnterKey(evt)) connectNow();
 }
 
 event click $(#connect) {
-    var address = ($(#peer).value || "").trim();
-    var fingerprint = ($(#fingerprint).value || "").replace(/\s/g, "");
-    if (!handler.is_direct_address(address) || !/^[0-9a-fA-F]{64}$/.test(fingerprint)) {
-        $(#error).text = "Enter the device IP and paste its fingerprint.";
-        return;
-    }
-    $(#error).text = "";
-    handler.set_local_option("peer-fingerprint-" + address, fingerprint);
-    handler.new_remote(address, "connect", false);
+    connectNow();
 }
 
 event click $(#sharing) {
-    var sharing = handler.get_option("stop-service") == "N";
-    if (!sharing && !handler.request_host_permissions()) {
-        $(#host-error).text = "Allow screen recording and accessibility in System Settings, then start sharing.";
+    $(#host-error).text = "";
+    var enabled = handler.get_option("stop-service") == "N";
+    if (!enabled) {
+        if (!handler.request_host_permissions()) {
+            $(#host-error).text = "Allow screen recording and accessibility in System Settings, then start sharing.";
+            return;
+        }
+        stopPending = false;
+        handler.set_option("stop-service", "N");
+        refreshHost();
         return;
     }
-    $(#host-error).text = "";
-    handler.set_option("stop-service", sharing ? "Y" : "N");
+    if (!stopPending) {
+        stopPending = true;
+        $(#sharing).text = "Click again to stop";
+        root.timer(4s, function() {
+            if (!stopPending) return;
+            stopPending = false;
+            refreshHost();
+        });
+        return;
+    }
+    stopPending = false;
+    handler.set_option("stop-service", "Y");
     refreshHost();
 }
 
+event click $(#copy-address) {
+    copyText($(#local-addresses).value, $(#copy-address));
+}
+
+event click $(#copy-fingerprint) {
+    copyText(fingerprintHex($(#local-fingerprint).text), $(#copy-fingerprint));
+}
+
+event click $(#copy-passcode) {
+    copyText($(#local-passcode).value, $(#copy-passcode));
+}
+
 function self.ready() {
-    view.windowMinSize = (440, 400);
-    centerize(scaleIt(520), scaleIt(470));
+    view.windowMinSize = (480, 520);
+    centerize(scaleIt(660), scaleIt(660));
     refreshHost();
+    updateFingerprintHint();
+    // Sciter focuses the first input on load and scrolls the first card title out of view.
+    self.timer(100ms, function() { $(body).scrollTo(0, 0); });
     self.timer(1s, refreshHost);
 }
 

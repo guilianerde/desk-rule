@@ -75,6 +75,34 @@ pub fn endpoint(peer: &str) -> ResultType<SocketAddr> {
     }
 }
 
+#[cfg(not(any(target_os = "android", target_os = "ios", feature = "flutter")))]
+pub fn normalize_address(peer: &str) -> Option<String> {
+    endpoint(peer).ok().map(|addr| addr.to_string())
+}
+
+#[cfg(not(any(target_os = "android", target_os = "ios", feature = "flutter")))]
+pub fn local_addresses() -> Vec<String> {
+    let mut addresses = Vec::new();
+    for interface in default_net::get_interfaces() {
+        for ipv4 in &interface.ipv4 {
+            if !ipv4.addr.is_loopback() && !ipv4.addr.is_unspecified() {
+                addresses.push(SocketAddr::new(IpAddr::V4(ipv4.addr), PORT).to_string());
+            }
+        }
+        for ipv6 in &interface.ipv6 {
+            if !ipv6.addr.is_loopback()
+                && !ipv6.addr.is_unspecified()
+                && ipv6.addr.segments()[0] & 0xffc0 != 0xfe80
+            {
+                addresses.push(SocketAddr::new(IpAddr::V6(ipv6.addr), PORT).to_string());
+            }
+        }
+    }
+    addresses.sort();
+    addresses.dedup();
+    addresses
+}
+
 pub async fn connect(peer: &str) -> ResultType<(Stream, Vec<u8>)> {
     let address = endpoint(peer)?;
     let fingerprint = LocalConfig::get_option_from_file(&format!("peer-fingerprint-{peer}"));
@@ -269,6 +297,29 @@ pub async fn serve() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(not(any(target_os = "android", target_os = "ios", feature = "flutter")))]
+    #[test]
+    fn normalizes_direct_addresses() {
+        assert_eq!(
+            normalize_address("192.168.1.5").as_deref(),
+            Some("192.168.1.5:21118")
+        );
+        assert_eq!(
+            normalize_address("192.168.1.5:22000").as_deref(),
+            Some("192.168.1.5:22000")
+        );
+        assert_eq!(
+            normalize_address("fd00::1").as_deref(),
+            Some("[fd00::1]:21118")
+        );
+        assert_eq!(
+            normalize_address("[fd00::1]:21118").as_deref(),
+            Some("[fd00::1]:21118")
+        );
+        assert_eq!(normalize_address("not an address"), None);
+        assert_eq!(normalize_address("0.0.0.0"), None);
+    }
 
     #[cfg(not(target_os = "ios"))]
     #[test]

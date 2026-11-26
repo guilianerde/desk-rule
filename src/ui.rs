@@ -214,6 +214,14 @@ impl UI {
         crate::direct::endpoint(&address).is_ok()
     }
 
+    fn direct_addresses(&self) -> String {
+        crate::direct::local_addresses().join("\n")
+    }
+
+    fn normalize_direct_address(&self, address: String) -> String {
+        crate::direct::normalize_address(&address).unwrap_or_default()
+    }
+
     fn request_host_permissions(&self) -> bool {
         #[cfg(target_os = "macos")]
         {
@@ -752,6 +760,8 @@ impl sciter::EventHandler for UI {
         fn get_id();
         fn temporary_password();
         fn is_direct_address(String);
+        fn direct_addresses();
+        fn normalize_direct_address(String);
         fn request_host_permissions();
         fn update_temporary_password();
         fn set_permanent_password(String);

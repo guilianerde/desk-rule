@@ -2,12 +2,56 @@
 <head>
     <style>
         @import url(common.css);
-        body { margin: 24dip; width: *; height: *; overflow: auto; }
-        section { margin-bottom: 18dip; }
-        label { display: block; margin: 6dip 0; }
-        input[type=text] { width: *; }
-        button { margin-top: 8dip; }
-        .error { color: #b02323; }
+        body { margin: 20dip; width: *; height: *; overflow: auto; }
+        section.card {
+            background: color(bg);
+            border: color(border) solid 1px;
+            border-radius: 10dip;
+            padding: 14dip 16dip;
+            margin-bottom: 14dip;
+        }
+        .card-title { font-size: 1.3em; font-weight: bold; margin-bottom: 10dip; }
+        label { display: block; margin: 10dip 0 4dip 0; color: color(light-text); font-size: 0.9em; }
+        input[type=text] { font-size: 1.05em; width: *; padding: 3dip 6dip; }
+        input.mono, select.mono {
+            font-family: Consolas, Menlo, Monaco, 'Courier New', monospace;
+            font-size: 0.9em;
+            letter-spacing: 0.02em;
+        }
+        .hint { color: color(lighter-text); font-size: 0.82em; margin-top: 4dip; line-height: 1.4em; }
+        .hint.ok { color: #1a7f37; }
+        .error { color: #b02323; font-size: 0.9em; margin-top: 6dip; }
+        .row { flow: horizontal; border-spacing: 8dip; margin-top: 2dip; }
+        .row input, .row select, .row .fingerprint { width: *; }
+        .row button { margin: 0; }
+        select {
+            height: 2em;
+            border: color(border) solid 1px;
+            background: color(bg);
+            color: color(text);
+            font-size: 0.95em;
+        }
+        button { margin-top: 10dip; }
+        .share-status { flow: horizontal; margin: 2dip 0 8dip 0; }
+        .dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 4px;
+            margin: 6px 8px 0 0;
+            background: #d0d0d0;
+        }
+        .dot.on { background: #32bea6; }
+        .fingerprint {
+            font-family: Consolas, Menlo, Monaco, 'Courier New', monospace;
+            font-size: 0.9em;
+            letter-spacing: 0.06em;
+            padding: 5dip 8dip;
+            background: color(gray-bg);
+            border-radius: 4dip;
+            min-height: 1.6em;
+            word-wrap: break-word;
+        }
     </style>
     <script type="text/tiscript">
         include "common.tis";
@@ -15,24 +59,40 @@
     </script>
 </head>
 <body>
-    <section>
-        <h2>Control a device</h2>
+    <section class="card">
+        <div class="card-title">Control a device</div>
         <label for="peer">Device IP address</label>
-        <input type="text" id="peer" placeholder="100.64.0.10" />
+        <input type="text" id="peer" placeholder="192.168.1.10" />
+        <div class="hint">Port 21118 is used by default, e.g. 192.168.1.10 or [fd00::1]. Add :port to override.</div>
         <label for="fingerprint">Device fingerprint</label>
-        <input type="text" id="fingerprint" />
-        <button id="connect">Connect</button>
+        <input type="text" id="fingerprint" class="mono" placeholder="64 hex characters" />
+        <div id="fingerprint-hint" class="hint">Compare each character with the fingerprint shown on the controlled device.</div>
+        <button id="connect" class="button">Connect</button>
         <div id="error" class="error"></div>
     </section>
-    <section>
-        <h2>Allow remote control</h2>
-        <button id="sharing">Start sharing</button>
+    <section class="card">
+        <div class="card-title">Allow remote control</div>
+        <div class="share-status"><span id="share-dot" class="dot"></span><span id="share-text">Not sharing</span></div>
+        <button id="sharing" class="button">Start sharing</button>
         <div id="host-error" class="error"></div>
         <div id="host-info" style="display:none">
-            <label for="local-fingerprint">Fingerprint</label>
-            <input type="text" id="local-fingerprint" readonly />
+            <label>Reachable address</label>
+            <div class="row">
+                <select id="local-addresses" class="mono"></select>
+                <button id="copy-address" class="button outline">Copy</button>
+            </div>
+            <div id="no-address" class="hint" style="display:none">No reachable local address detected. Check the network connection.</div>
+            <div class="hint">Give the controlling device this address, the fingerprint, and the temporary password.</div>
+            <label>Fingerprint</label>
+            <div class="row">
+                <div id="local-fingerprint" class="fingerprint"></div>
+                <button id="copy-fingerprint" class="button outline">Copy</button>
+            </div>
             <label for="local-passcode">Temporary password</label>
-            <input type="text" id="local-passcode" readonly />
+            <div class="row">
+                <input type="text" id="local-passcode" class="mono" placeholder="Not available" readonly />
+                <button id="copy-passcode" class="button outline">Copy</button>
+            </div>
         </div>
     </section>
 </body>

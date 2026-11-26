@@ -21,10 +21,10 @@ function copyText(text, button) {
     if (!text) return;
     try {
         Clipboard.writeText(text);
-        button.text = "Copied";
-        root.timer(1200ms, function() { button.text = "Copy"; });
+        button.text = translate("Copied");
+        root.timer(1200ms, function() { button.text = translate("Copy"); });
     } catch (e) {
-        button.text = "Copy failed";
+        button.text = translate("Copy failed");
     }
 }
 
@@ -52,13 +52,13 @@ function updateFingerprintHint() {
     var length = fingerprintHex($(#fingerprint).value).length;
     var hint = $(#fingerprint-hint);
     if (length == 0) {
-        hint.text = "Compare each character with the fingerprint shown on the controlled device.";
+        hint.text = translate("Compare each character with the fingerprint shown on the controlled device.");
         hint.attributes.toggleClass("ok", false);
     } else if (length == 64) {
-        hint.text = "Fingerprint format looks correct.";
+        hint.text = translate("Fingerprint format looks correct.");
         hint.attributes.toggleClass("ok", true);
     } else {
-        hint.text = length + " of 64 characters.";
+        hint.text = translate("{" + length + "} of 64 characters.");
         hint.attributes.toggleClass("ok", false);
     }
 }
@@ -68,13 +68,13 @@ function connectNow() {
     var raw = ($(#peer).value || "").trim();
     var address = raw ? handler.normalize_direct_address(raw) : "";
     if (!address) {
-        $(#error).text = "Enter a valid device IP address.";
+        $(#error).text = translate("Enter a valid device IP address.");
         view.focus = $(#peer);
         return;
     }
     var fingerprint = fingerprintHex($(#fingerprint).value);
     if (fingerprint.length != 64) {
-        $(#error).text = "Enter the 64-character fingerprint shown on the controlled device.";
+        $(#error).text = translate("Enter the 64-character fingerprint shown on the controlled device.");
         view.focus = $(#fingerprint);
         return;
     }
@@ -83,20 +83,20 @@ function connectNow() {
     connectPending = true;
     var button = $(#connect);
     button.state.disabled = true;
-    button.text = "Connecting…";
+    button.text = translate("Connecting...");
     root.timer(4s, function() {
         if (!connectPending) return;
         connectPending = false;
         button.state.disabled = false;
-        button.text = "Connect";
+        button.text = translate("Connect");
     });
     handler.new_remote(address, "connect", false);
 }
 
 function refreshHost() {
     var enabled = handler.get_option("stop-service") == "N";
-    if (!stopPending) $(#sharing).text = enabled ? "Stop sharing" : "Start sharing";
-    $(#share-text).text = enabled ? "Sharing on port 21118" : "Not sharing";
+    if (!stopPending) $(#sharing).text = translate(enabled ? "Stop sharing" : "Start sharing");
+    $(#share-text).text = translate(enabled ? "Sharing on port 21118" : "Not sharing");
     $(#share-dot).attributes.toggleClass("on", enabled);
     $(#host-info).style#display = enabled ? "block" : "none";
     if (enabled) {
@@ -155,7 +155,7 @@ event click $(#sharing) {
     var enabled = handler.get_option("stop-service") == "N";
     if (!enabled) {
         if (!handler.request_host_permissions()) {
-            $(#host-error).text = "Allow screen recording and accessibility in System Settings, then start sharing.";
+            $(#host-error).text = translate("Allow screen recording and accessibility in System Settings, then start sharing.");
             return;
         }
         stopPending = false;
@@ -165,7 +165,7 @@ event click $(#sharing) {
     }
     if (!stopPending) {
         stopPending = true;
-        $(#sharing).text = "Click again to stop";
+        $(#sharing).text = translate("Click again to stop");
         root.timer(4s, function() {
             if (!stopPending) return;
             stopPending = false;
@@ -190,11 +190,31 @@ event click $(#copy-passcode) {
     copyText($(#local-passcode).value, $(#copy-passcode));
 }
 
+function applyLanguage() {
+    $(#title-control).text = translate("Control Remote Desktop");
+    $(#label-peer).text = translate("Device IP address");
+    $(#hint-peer).text = translate("Port 21118 is used by default, e.g. 192.168.1.10 or [fd00::1]. Add :port to override.");
+    $(#label-fingerprint).text = translate("Device fingerprint");
+    $(#fingerprint).attributes["placeholder"] = translate("64 hex characters");
+    $(#connect).text = translate("Connect");
+    $(#title-allow).text = translate("Allow remote control");
+    $(#label-reachable).text = translate("Reachable address");
+    $(#copy-address).text = translate("Copy");
+    $(#no-address).text = translate("No reachable local address detected. Check the network connection.");
+    $(#hint-give).text = translate("Give the controlling device this address, the fingerprint, and the temporary password.");
+    $(#label-local-fingerprint).text = translate("Fingerprint");
+    $(#copy-fingerprint).text = translate("Copy");
+    $(#label-passcode).text = translate("Temporary password");
+    $(#local-passcode).attributes["placeholder"] = translate("Not available");
+    $(#copy-passcode).text = translate("Copy");
+    updateFingerprintHint();
+}
+
 function self.ready() {
     view.windowMinSize = (480, 520);
     centerize(scaleIt(660), scaleIt(660));
+    applyLanguage();
     refreshHost();
-    updateFingerprintHint();
     // Sciter focuses the first input on load and scrolls the first card title out of view.
     self.timer(100ms, function() { $(body).scrollTo(0, 0); });
     self.timer(1s, refreshHost);

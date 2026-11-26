@@ -201,7 +201,7 @@ event change $(#language) {
 function applyLanguage() {
     $(#label-language).text = translate("Language");
     var lang = handler.get_local_option("lang").toLowerCase();
-    if (lang != "zh-cn" && lang != "en") lang = "";
+    if (lang == "pt" || lang == "br") lang = "pt-br";
     $(#option-system).text = translate("Follow System");
     $(#language).value = lang;
     $(#title-control).text = translate("Control Remote Desktop");

@@ -190,7 +190,20 @@ event click $(#copy-passcode) {
     copyText($(#local-passcode).value, $(#copy-passcode));
 }
 
+event change $(#language) {
+    handler.set_local_option("lang", $(#language).value);
+    $(#error).text = "";
+    $(#host-error).text = "";
+    applyLanguage();
+    refreshHost();
+}
+
 function applyLanguage() {
+    $(#label-language).text = translate("Language");
+    var lang = handler.get_local_option("lang").toLowerCase();
+    if (lang != "zh-cn" && lang != "en") lang = "";
+    $(#option-system).text = translate("Follow System");
+    $(#language).value = lang;
     $(#title-control).text = translate("Control Remote Desktop");
     $(#label-peer).text = translate("Device IP address");
     $(#hint-peer).text = translate("Port 21118 is used by default, e.g. 192.168.1.10 or [fd00::1]. Add :port to override.");
@@ -212,7 +225,7 @@ function applyLanguage() {
 
 function self.ready() {
     view.windowMinSize = (480, 520);
-    centerize(scaleIt(660), scaleIt(660));
+    centerize(scaleIt(660), scaleIt(720));
     applyLanguage();
     refreshHost();
     // Sciter focuses the first input on load and scrolls the first card title out of view.

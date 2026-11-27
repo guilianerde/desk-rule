@@ -9,6 +9,7 @@ var display_origin_x = 0;
 var display_origin_y = 0;
 var display_cursor_embedded = false;
 var display_scale = 1;
+var window_sized = false;
 // the scale factor is different from `display_scale` if peer platform is Linux (Wayland).
 var cursor_scale = 1;
 var keyboard_enabled = true; // server side
@@ -29,8 +30,29 @@ handler.setDisplay = function(x, y, w, h, cursor_embedded, scale) {
     display_origin_y = y;
     display_cursor_embedded = cursor_embedded;
     display_remote_scale = scale;
+    if (!window_sized) {
+        window_sized = true;
+        fitWindowToDisplay();
+    }
     adaptDisplay();
     if (recording) handler.record_screen(true, 0, w, h);
+}
+
+function fitWindowToDisplay() {
+    var w = display_width;
+    var h = display_height;
+    if (!w || !h) return;
+    var hh = $(header).box(#height, #border);
+    var (sx, sy, sw, sh) = view.screenBox(#workarea, #rectw);
+    var scale = 1.;
+    if (w > sw) scale = sw.toFloat() / w;
+    if (h * scale > sh - hh) scale = (sh - hh).toFloat() / h;
+    var extra = is_win ? 4 : 2;
+    centerize((w * scale + extra).toInteger(), (h * scale + hh + extra).toInteger());
+}
+
+view << event size {
+    adaptDisplay();
 }
 
 // in case toolbar not shown correctly
@@ -83,7 +105,7 @@ function adaptDisplay() {
             var scale_y = bh.toFloat() / h;
             var scale = scale_x < scale_y ? scale_x : scale_y;
             if ((scale > 1 && style == "stretch") ||
-                (scale < 1 && style == "shrink")) {
+                (scale < 1 && (style == "shrink" || style == ""))) {
                 display_scale = scale;
                 w = w * scale;
                 h = h * scale;
@@ -538,6 +560,7 @@ handler.adaptSize = function() {
     var (sx, sy, sw, sh) = view.screenBox(#workarea, #rectw);
     var (fx, fy, fw, fh) = view.screenBox(#frame, #rectw);
     if (is_osx) workarea_offset = sy;
+    if (window_sized) return;
     var r = handler.get_size();
     if (isReasonableSize(r) && r[2] > 0) {
         if (r[2] >= fw && r[3] >= fh && !is_linux) {

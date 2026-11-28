@@ -199,6 +199,16 @@ event click $(#language) {
     if (selected) selected.scrollToView();
 }
 
+event mousedown (evt) {
+    var list = $(#language-list);
+    if (list.style#display == "none") return;
+    var target = evt.target;
+    if (!target) return;
+    if (target == list || target.parent == list) return;
+    if (target.id == "language" || target.id == "label-language") return;
+    list.style#display = "none";
+}
+
 event click $(#language-list .lang-option) (_, me) {
     $(#language-list).style#display = "none";
     handler.set_local_option("lang", me.attributes["value"] || "");

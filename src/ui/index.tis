@@ -190,12 +190,23 @@ event click $(#copy-passcode) {
     copyText($(#local-passcode).value, $(#copy-passcode));
 }
 
-event change $(#language) {
-    handler.set_local_option("lang", $(#language).value);
+event click $(#language) {
+    var list = $(#language-list);
+    var show = list.style#display == "none";
+    list.style#display = show ? "block" : "none";
+    if (!show) return;
+    var selected = list.$(.lang-option.selected);
+    if (selected) selected.scrollToView();
+}
+
+event click $(#language-list .lang-option) (_, me) {
+    $(#language-list).style#display = "none";
+    handler.set_local_option("lang", me.attributes["value"] || "");
     $(#error).text = "";
     $(#host-error).text = "";
     applyLanguage();
     refreshHost();
+    return true;
 }
 
 function applyLanguage() {
@@ -203,7 +214,14 @@ function applyLanguage() {
     var lang = handler.get_local_option("lang").toLowerCase();
     if (lang == "pt" || lang == "br") lang = "pt-br";
     $(#option-system).text = translate("Follow System");
-    $(#language).value = lang;
+    var names = "";
+    for (var el in $$(#language-list .lang-option)) {
+        var value = el.attributes["value"] || "";
+        el.attributes.toggleClass("selected", value == lang);
+        if (value == lang) names = el.text;
+    }
+    if (!names) names = $(#option-system).text;
+    $(#language).text = names;
     $(#title-control).text = translate("Control Remote Desktop");
     $(#label-peer).text = translate("Device IP address");
     $(#hint-peer).text = translate("Port 21118 is used by default, e.g. 192.168.1.10 or [fd00::1]. Add :port to override.");

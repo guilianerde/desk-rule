@@ -34,7 +34,19 @@
         button { margin-top: 10dip; }
         .lang-bar { flow: horizontal; border-spacing: 8dip; margin-bottom: 12dip; }
         .lang-bar label { width: *; margin: 0; line-height: 2em; }
-        .lang-bar select { width: 15em; margin: 0; }
+        .lang-bar > button { margin: 0; min-width: 15em; }
+        .lang-list {
+            border: color(border) solid 1px;
+            border-radius: 8dip;
+            background: color(bg);
+            height: 220dip;
+            overflow-y: scroll-indicator;
+            padding: 4dip;
+            margin-bottom: 12dip;
+        }
+        .lang-option { padding: 4dip 8dip; cursor: pointer; }
+        .lang-option:hover { background: color(menu-hover); }
+        .lang-option.selected { font-weight: bold; }
         .share-status { flow: horizontal; margin: 2dip 0 8dip 0; }
         .dot {
             display: inline-block;
@@ -64,61 +76,62 @@
 <body>
     <div class="lang-bar">
         <label for="language" id="label-language">Language</label>
-        <select id="language">
-            <option value="" id="option-system">Follow system</option>
-            <option value="sq">Shqip</option>
-            <option value="ar">العربية</option>
-            <option value="az">Azərbaycan</option>
-            <option value="eu">Euskara</option>
-            <option value="be">Беларуская</option>
-            <option value="bg">Български</option>
-            <option value="ca">Català</option>
-            <option value="hr">Hrvatski</option>
-            <option value="cs">Čeština</option>
-            <option value="da">Dansk</option>
-            <option value="nl">Nederlands</option>
-            <option value="en">English</option>
-            <option value="eo">Esperanto</option>
-            <option value="et">Eesti</option>
-            <option value="fa">فارسی</option>
-            <option value="fi">Suomi</option>
-            <option value="fr">Français</option>
-            <option value="gl">Galego</option>
-            <option value="ge">ქართული</option>
-            <option value="de">Deutsch</option>
-            <option value="el">Ελληνικά</option>
-            <option value="gu">ગુજરાતી</option>
-            <option value="hi">हिन्दी</option>
-            <option value="hu">Magyar</option>
-            <option value="id">Bahasa Indonesia</option>
-            <option value="it">Italiano</option>
-            <option value="ja">日本語</option>
-            <option value="kz">Қазақша</option>
-            <option value="ko">한국어</option>
-            <option value="lv">Latviešu</option>
-            <option value="lt">Lietuvių</option>
-            <option value="ml">മലയാളം</option>
-            <option value="nb">Norsk bokmål</option>
-            <option value="pl">Polski</option>
-            <option value="pt-br">Português (Brasil)</option>
-            <option value="pt-pt">Português (Portugal)</option>
-            <option value="ro">Română</option>
-            <option value="ru">Русский</option>
-            <option value="sc">Sardu</option>
-            <option value="sr">Српски</option>
-            <option value="sk">Slovenčina</option>
-            <option value="sl">Slovenščina</option>
-            <option value="es">Español</option>
-            <option value="sv">Svenska</option>
-            <option value="ta">தமிழ்</option>
-            <option value="th">ไทย</option>
-            <option value="tr">Türkçe</option>
-            <option value="uk">Українська</option>
-            <option value="ur">اردو</option>
-            <option value="vi">Tiếng Việt</option>
-            <option value="zh-cn">简体中文</option>
-            <option value="zh-tw">繁體中文</option>
-        </select>
+        <button id="language" class="button outline"></button>
+    </div>
+    <div class="lang-list" id="language-list" style="display:none">
+        <div class="lang-option" value="" id="option-system">Follow system</div>
+        <div class="lang-option" value="sq">Shqip</div>
+        <div class="lang-option" value="ar">العربية</div>
+        <div class="lang-option" value="az">Azərbaycan</div>
+        <div class="lang-option" value="eu">Euskara</div>
+        <div class="lang-option" value="be">Беларуская</div>
+        <div class="lang-option" value="bg">Български</div>
+        <div class="lang-option" value="ca">Català</div>
+        <div class="lang-option" value="hr">Hrvatski</div>
+        <div class="lang-option" value="cs">Čeština</div>
+        <div class="lang-option" value="da">Dansk</div>
+        <div class="lang-option" value="nl">Nederlands</div>
+        <div class="lang-option" value="en">English</div>
+        <div class="lang-option" value="eo">Esperanto</div>
+        <div class="lang-option" value="et">Eesti</div>
+        <div class="lang-option" value="fa">فارسی</div>
+        <div class="lang-option" value="fi">Suomi</div>
+        <div class="lang-option" value="fr">Français</div>
+        <div class="lang-option" value="gl">Galego</div>
+        <div class="lang-option" value="ge">ქართული</div>
+        <div class="lang-option" value="de">Deutsch</div>
+        <div class="lang-option" value="el">Ελληνικά</div>
+        <div class="lang-option" value="gu">ગુજરાતી</div>
+        <div class="lang-option" value="hi">हिन्दी</div>
+        <div class="lang-option" value="hu">Magyar</div>
+        <div class="lang-option" value="id">Bahasa Indonesia</div>
+        <div class="lang-option" value="it">Italiano</div>
+        <div class="lang-option" value="ja">日本語</div>
+        <div class="lang-option" value="kz">Қазақша</div>
+        <div class="lang-option" value="ko">한국어</div>
+        <div class="lang-option" value="lv">Latviešu</div>
+        <div class="lang-option" value="lt">Lietuvių</div>
+        <div class="lang-option" value="ml">മലയാളം</div>
+        <div class="lang-option" value="nb">Norsk bokmål</div>
+        <div class="lang-option" value="pl">Polski</div>
+        <div class="lang-option" value="pt-br">Português (Brasil)</div>
+        <div class="lang-option" value="pt-pt">Português (Portugal)</div>
+        <div class="lang-option" value="ro">Română</div>
+        <div class="lang-option" value="ru">Русский</div>
+        <div class="lang-option" value="sc">Sardu</div>
+        <div class="lang-option" value="sr">Српски</div>
+        <div class="lang-option" value="sk">Slovenčina</div>
+        <div class="lang-option" value="sl">Slovenščina</div>
+        <div class="lang-option" value="es">Español</div>
+        <div class="lang-option" value="sv">Svenska</div>
+        <div class="lang-option" value="ta">தமிழ்</div>
+        <div class="lang-option" value="th">ไทย</div>
+        <div class="lang-option" value="tr">Türkçe</div>
+        <div class="lang-option" value="uk">Українська</div>
+        <div class="lang-option" value="ur">اردو</div>
+        <div class="lang-option" value="vi">Tiếng Việt</div>
+        <div class="lang-option" value="zh-cn">简体中文</div>
+        <div class="lang-option" value="zh-tw">繁體中文</div>
     </div>
     <section class="card">
         <div class="card-title" id="title-control">Control a device</div>
